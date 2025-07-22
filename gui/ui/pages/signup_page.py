@@ -1,9 +1,9 @@
 import customtkinter as ctk
-from ui.components.input import Input
-from ui.components.button import Button
-from ui.components.link import Link
-from ui.components.toast import Toast
-from utils.api import users
+from ui.atoms.input import Input
+from ui.atoms.button import Button
+from ui.atoms.link import Link
+from ui.atoms.toast import Toast
+from states.user_store import UserStore
 
 class SignupPage(ctk.CTkFrame):
     def __init__(self, master, controller, **kwargs):
@@ -29,13 +29,16 @@ class SignupPage(ctk.CTkFrame):
             placeholder="ID",
             width=300
         )
+        self.id_input.pack(pady=(0, 10))
 
         # input - Password
         self.pw_input = Input(
             master=self.center_frame,
             placeholder="Password",
+            show="*",
             width=300
         )
+        self.pw_input.pack(pady=(0, 20))
 
         # button - Sign Up
         self.login_button = Button(
@@ -44,6 +47,7 @@ class SignupPage(ctk.CTkFrame):
             type="white",
             command=self.handle_signup
         )
+        self.login_button.pack(pady=(0, 10))
 
         # link - Login
         self.signup_link = Link(
@@ -51,15 +55,21 @@ class SignupPage(ctk.CTkFrame):
             text="or Login",
             command=self.handle_login
         )
+        self.signup_link.pack()
+
+    def reset(self):
+        self.id_input.delete(0, 'end')
+        self.pw_input.delete(0, 'end')
 
     def handle_signup(self):
         user_id = self.id_input.get()
         password = self.pw_input.get()
 
-        if users.register_user(user_id, password):
-            Toast(self, "회원가입 성공!", type="success", duration=2000)
+        if UserStore().sign_up(user_id, password):
+            Toast(self, "Sign Up!", type="success", duration=2000)
+            self.controller.show_frame("LoginPage")
         else:
-            Toast(self, "이미 존재하는 사용자입니다.", type="error", duration=2000)
+            Toast(self, "User already exists.", type="error", duration=2000)
 
     def handle_login(self):
         self.controller.show_frame("LoginPage")

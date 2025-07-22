@@ -17,7 +17,7 @@ class Button(ctk.CTkButton):
             **kwargs
         )
 
-        self.pack(pady=(30, 10))
+        # self.pack(pady=(30, 10))
 
     def _get_style(self, type: str):
         if type == "white":

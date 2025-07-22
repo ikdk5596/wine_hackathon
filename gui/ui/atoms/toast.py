@@ -1,15 +1,18 @@
 import customtkinter as ctk
 
 class Toast(ctk.CTkToplevel):
-    def __init__(self, master, message: str, type: str = "info", duration: int = 2000):
+    def __init__(self, master, message: str, type: str = "info", duration: int = 2000, bg_color: str = "#5670f6"):
         super().__init__(master)
         self.overrideredirect(True)
         self.attributes("-topmost", True)
-        self.configure(bg="#5670f6")
+        self.configure(bg=bg_color)
+
+        background = ctk.CTkFrame(self, fg_color=bg_color)
+        background.pack(expand=True, fill="both")
 
         # frame
-        frame = ctk.CTkFrame(self, corner_radius=12, fg_color="white")
-        frame.pack(padx=10, pady=10, expand=True, fill="both")  # 패딩 추가!
+        frame = ctk.CTkFrame(background, corner_radius=12, fg_color="white")
+        frame.pack(expand=True, fill="both")  # 패딩 추가!
         frame.columnconfigure(1, weight=1)
 
         # icon map
@@ -23,7 +26,7 @@ class Toast(ctk.CTkToplevel):
         # icon
         icon_label = ctk.CTkLabel(frame, text=icon, text_color=color,
                                   font=("Arial", 18), width=32)
-        icon_label.grid(row=0, column=0, padx=(16, 8), pady=12)
+        icon_label.grid(row=0, column=0, padx=(8, 8), pady=12)
 
         # message
         message_label = ctk.CTkLabel(frame, text=message, font=("Helvetica", 13),
@@ -33,14 +36,14 @@ class Toast(ctk.CTkToplevel):
         # let it layout before positioning
         self.update_idletasks()
 
-        # width, height 계산 후 중앙 상단 위치
-        w = self.winfo_width()
-        h = self.winfo_height()
+        # position the toast - center top
+        w = self.winfo_reqwidth()
+        h = self.winfo_reqheight()
         root_x = master.winfo_rootx()
         root_y = master.winfo_rooty()
         root_w = master.winfo_width()
         x = root_x + (root_w // 2) - (w // 2)
-        y = root_y + 40
-        self.geometry(f"+{x}+{y}")
+        y = root_y + 40 
+        self.geometry(f"{w}x{h}+{x}+{y}")
 
         self.after(duration, self.destroy)
