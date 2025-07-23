@@ -1,10 +1,9 @@
 import customtkinter as ctk
-import socket
 from tkinter import filedialog
 from ui.atoms.profile import Profile
 from ui.atoms.button import Button
 from ui.atoms.toast import Toast
-from utils.image import path_to_base64, path_to_image
+from utils.image import path_to_image
 from utils.ip import get_my_ip
 from states.user_store import UserStore
 from controllers.user_controller import UserController

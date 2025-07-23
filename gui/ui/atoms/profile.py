@@ -1,6 +1,5 @@
 import customtkinter as ctk
 from PIL import Image, ImageDraw
-import os
 
 DEFAULT_IMAGE_PATH = "assets/images/default_user.png"
 

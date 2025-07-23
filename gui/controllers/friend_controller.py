@@ -1,5 +1,4 @@
-from urllib import response
-from api import user_api, friend_api
+from api import friend_api
 from utils.image import base64_to_image, image_to_base64
 from states.user_store import UserStore
 from states.friends_store import FriendsStore, Friend
@@ -41,7 +40,8 @@ class FriendController:
                     user_id=friend_data.get("user_id"),
                     friend_id=friend_data.get("friend_id"),
                     public_key=friend_data.get("public_key"),
-                    profile_image=profile_image
+                    profile_image=profile_image,
+                    messages_list=friend_data.get("messages_list", [])
                 )
                 friends_list.append(friend)
             FriendsStore().friends_list = friends_list
@@ -99,7 +99,8 @@ class FriendController:
                 user_id=user_id,
                 friend_id=friend_id,
                 public_key=public_key,
-                profile_image=profile_image
+                profile_image=profile_image,
+                messages_list=[]
             )
             FriendsStore().add_friend(friend)
             return {
@@ -154,6 +155,85 @@ class FriendController:
                 "message": response.get("message", "Failed to delete friend")
             }
         
+    def select_friend(self, friend_id: str) -> None:
+        if not isinstance(friend_id, str):
+            raise ValueError("Friend ID must be a string")
+        
+        friend = FriendsStore().get_friend(friend_id)
+        if friend:
+            FriendsStore().selected_friend = friend
+        else:
+            raise ValueError(f"Friend with ID {friend_id} not found")
+    
+    def send_message(self, user_id: str, friend_id: str, text: str) -> dict:
+        print("???")
+        if not isinstance(user_id, str):
+            raise ValueError("User ID must be a string")
+        if not isinstance(friend_id, str):
+            raise ValueError("Friend ID must be a string")
+        if not isinstance(text, str):
+            raise ValueError("Message must be a string")
+        
+        print(f"[FriendController] Sending message from {user_id} to {friend_id}: {text}")
+        
+        response = friend_api.create_message(user_id, friend_id, user_id, text, is_read=True)
+
+        if response.get("status") == "success":
+            friend = FriendsStore().get_friend(friend_id)
+            print("friend:", friend)
+            if friend:
+                message = {
+                    "sender_id": user_id,
+                    "text": response['text'],
+                    "timestamp": response['timestamp'],
+                    "is_read": response['is_read']
+                }
+                friend.messages_list = [*friend.messages_list, message]
+                print(friend.messages_list)
+            socket = ClientSocket(friend.ip)
+            socket.send({
+                "type": "new_message",
+                "data": {
+                    "sender_id": user_id,
+                    "text": response['text'],
+                    "timestamp": response['timestamp'],
+                }
+            })
+            return {
+                "status": response.get("status", "success"),
+                "message": response.get("message", "Message sent successfully"),
+            }
+        
+        else:
+            return {
+                "status": response.get("status", "error"),
+                "message": response.get("message", "Failed to send message")
+            }
+    
+    def receive_message(self, friend_id: str, text: str, timestamp: float) -> None:
+        response = friend_api.create_message(UserStore().user_id, friend_id, friend_id, text, timestamp)
+
+        if response.get("status") == "success":
+            friend = FriendsStore().get_friend(friend_id)
+            if friend:
+                message = {
+                    "sender_id": friend_id,
+                    "text": response['text'],
+                    "timestamp": response['timestamp'],
+                    "is_read": response['is_read']
+                }
+                friend.messages_list = [*friend.messages_list, message]
+            return {
+                "status": response.get("status", "success"),
+                "message": response.get("message", "Message sent successfully"),
+            }
+        
+        else:
+            return {
+                "status": response.get("status", "error"),
+                "message": response.get("message", "Failed to send message")
+            }
+    
     def _handle_socket_response(self, response):
         print(f"[FriendController] Received socket response: {response}")
         if response.get("type") == "request_friend":
@@ -185,3 +265,8 @@ class FriendController:
                 public_key=serialization.load_pem_public_key(response.get("data").get("public_key").encode('utf-8')),
                 profile_image=base64_to_image(response.get("data").get("profile_base64")) if response.get("data").get("profile_base64") else None
             )
+        elif response.get("type") == "new_message":
+            friend_id = response.get("data").get("friend_id")
+            text = response.get("data").get("text")
+            timestamp = response.get("data").get("timestamp")
+            self.receive_message(friend_id, text, timestamp)

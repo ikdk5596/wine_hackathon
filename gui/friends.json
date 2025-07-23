@@ -1,9 +1,0 @@
-[
-  {
-    "user_id": "abc",
-    "ip": "163.152.174.104",
-    "friend_id": "def",
-    "public_key": "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAn5V3B7mREcVVnw/C/s31\ngnOdjrSCKMSEriX+sJzWEPKecW4tK8AF1EY5VOVlzN9x+6xMGOZGyQQqcxLdWJhA\nBneq6jxGU1mG8r0j4EwSFpoOq3VY93hVseCLyC9azydt9FFUWLP9/6dOZsAmH0Ta\nAdTwXsuswmDvdLm9ZYaVePhtUGQkyPk20YbHVkQiKCovBTJ2Kq1XXdvEhRqRUJVv\nKlkpWjdWu0VC9GrA894Gopuc0yKytngnw0sKhHNDXG0bQ9uI3kD2xLbFuNhclOll\n68Ci/IMg4FeSfOHBwcg/z3VGRKCAalLooz38eXuRShhmlsK7W60vqCo/uhhmanFq\n4QIDAQAB\n-----END PUBLIC KEY-----\n",
-    "profile_base64": null
-  }
-]

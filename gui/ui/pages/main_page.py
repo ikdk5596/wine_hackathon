@@ -18,5 +18,5 @@ class MainPage(ctk.CTkFrame):
         top_border_frame = ctk.CTkFrame(self, height=2, fg_color="#e4e4e4")
         top_border_frame.pack(fill="x", padx=0, pady=(10, 2))
 
-        self.friends_list = FriendsList(self)
+        self.friends_list = FriendsList(self, controller)
         self.friends_list.pack(fill="both", expand=True)

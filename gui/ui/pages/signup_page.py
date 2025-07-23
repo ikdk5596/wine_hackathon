@@ -3,7 +3,6 @@ from ui.atoms.input import Input
 from ui.atoms.button import Button
 from ui.atoms.link import Link
 from ui.atoms.toast import Toast
-from states.user_store import UserStore
 from controllers.user_controller import UserController
 
 class SignupPage(ctk.CTkFrame):

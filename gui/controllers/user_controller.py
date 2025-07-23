@@ -1,4 +1,3 @@
-from urllib import response
 from api import user_api
 from utils.image import base64_to_image, image_to_base64
 from states.user_store import UserStore
@@ -95,7 +94,7 @@ class UserController:
         
         profile_base64 = image_to_base64(profile_image)
         response = user_api.update_user_profile(user_id, profile_base64)
-        print(response)
+        
         if response.get("status") == "success":
             UserStore().profile_image = base64_to_image(response.get("profile_base64"))
             for friend in FriendsStore().friends_list:

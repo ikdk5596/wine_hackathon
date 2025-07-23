@@ -1,7 +1,4 @@
-from api import user_api
-from utils.image import base64_to_image
 from states.observable import Observable
-from states.friends_store import FriendsStore
 
 class UserStore(Observable):
     _instance = None

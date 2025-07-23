@@ -1,5 +1,4 @@
 import customtkinter as ctk
-from states.friends_store import FriendsStore
 from ui.atoms.toast import Toast
 from ui.atoms.button import Button
 from ui.atoms.input import Input
