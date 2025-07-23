@@ -1,9 +1,10 @@
 import customtkinter as ctk
-from ui.components.input import Input
-from ui.components.button import Button
-from ui.components.link import Link
-from ui.components.toast import Toast
-from utils.api import users
+from ui.atoms.input import Input
+from ui.atoms.button import Button
+from ui.atoms.link import Link
+from ui.atoms.toast import Toast
+from api import users
+from states.user_store import UserStore
 
 class LoginPage(ctk.CTkFrame):
     def __init__(self, master, controller, **kwargs):
@@ -29,13 +30,16 @@ class LoginPage(ctk.CTkFrame):
             placeholder="ID",
             width=300
         )
+        self.id_input.pack(pady=(0, 10))
 
         # input - Password
         self.pw_input = Input(
             master=self.center_frame,
             placeholder="Password",
+            show="*",
             width=300
         )
+        self.pw_input.pack(pady=(0, 20))
 
         # button - Login
         self.login_button = Button(
@@ -44,6 +48,7 @@ class LoginPage(ctk.CTkFrame):
             type="white",
             command=self.handle_login
         )
+        self.login_button.pack(pady=(0, 10))
 
         # link - SignUp
         self.signup_link = Link(
@@ -51,13 +56,21 @@ class LoginPage(ctk.CTkFrame):
             text="or SignUp",
             command=self.handle_signup
         )
+        self.signup_link.pack()
+
+    def reset(self):
+        self.id_input.delete(0, 'end')
+        self.pw_input.delete(0, 'end')
 
     def handle_login(self):
         user_id = self.id_input.get()
         password = self.pw_input.get()
 
-        if users.authenticate_user(user_id, password):
+        result = UserStore().login(user_id, password)
+        if result:
             Toast(self, "Login successful!", type="success", duration=2000)
+            print(UserStore().user_id)
+            self.controller.show_frame("MainPage")
         else:
             Toast(self, "Login failed!", type="error", duration=2000)
 

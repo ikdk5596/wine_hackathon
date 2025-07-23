@@ -11,4 +11,3 @@ class Input(ctk.CTkEntry):
             text_color="#333333",         # ✅ 전경색 (글자색) 설정
             **kwargs
         )
-        self.pack(pady=10, padx=40, fill="x")

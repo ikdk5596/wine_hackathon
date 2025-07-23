@@ -16,7 +16,7 @@ class App(ctk.CTk):
         super().__init__()
         self._setup_window()
         self._init_pages()
-        
+
     def _setup_window(self):
         self.title(APP_TITLE)
         self.geometry(WINDOW_SIZE)
@@ -31,9 +31,10 @@ class App(ctk.CTk):
 
         from ui.pages.login_page import LoginPage
         from ui.pages.signup_page import SignupPage
+        from ui.pages.main_page import MainPage
 
         self.frames = {}
-        for PageClass in (LoginPage, SignupPage):
+        for PageClass in (LoginPage, SignupPage, MainPage):
             name = PageClass.__name__
             frame = PageClass(self.container, controller=self)
             frame.grid(row=0, column=0, sticky="nsew")
@@ -47,6 +48,7 @@ class App(ctk.CTk):
             raise ValueError(f"Page {page_class} not found in frames.")
         else:
             frame.tkraise()
+            frame.reset()
 
 if __name__ == "__main__":
     configure_ctk()
