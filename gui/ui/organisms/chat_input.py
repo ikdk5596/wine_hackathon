@@ -1,6 +1,7 @@
 import customtkinter as ctk
 import tkinter.filedialog as fd
 from ui.atoms.button import Button
+from utils.image import path_to_image
 from states.friends_store import FriendsStore
 from states.user_store import UserStore
 from controllers.friend_controller import FriendController
@@ -32,7 +33,7 @@ class ChatInput(ctk.CTkFrame):
         self.selected_file = None
 
     def pick_file(self):
-        path = fd.askopenfilename()
+        path = fd.askopenfilename(filetypes=[("Image Files", "*.png *.jpg *.jpeg")])
         if path:
             self.selected_file = path
             self.file_button.configure(text="File chosen")
@@ -41,12 +42,15 @@ class ChatInput(ctk.CTkFrame):
             self.file_button.configure(text="Choose file")
 
     def send_message(self):
-        message = self.textbox.get("0.0", "end").strip()
+        text = self.textbox.get("0.0", "end").strip()
+        image = path_to_image(self.selected_file) if self.selected_file else None
         FriendController().send_message(
             UserStore().user_id,
             FriendsStore().selected_friend.friend_id,
-            message
+            text,
+            image
         )
+
         self.textbox.delete("0.0", "end")
         self.selected_file = None
         self.file_button.configure(text="Choose file")
