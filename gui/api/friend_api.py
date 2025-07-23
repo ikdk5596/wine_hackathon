@@ -27,6 +27,7 @@ def create_friend(user_id: str, ip:str, friend_id:str, public_key: RSAPublicKey,
         encoding=serialization.Encoding.PEM,
         format=serialization.PublicFormat.SubjectPublicKeyInfo
     ).decode('utf-8')
+
     friends.append({
         "user_id": user_id,
         "ip": ip,
@@ -83,14 +84,14 @@ def delete_friend(user_id: str, friend_id: str) -> dict:
         "message": "Friend deleted successfully"
     }
 
-def create_message(user_id: str, friend_id: str, sender_id: str, text: str = '', latent_bytes: bytes | None = None, encrypted_seed: str = '', timestamp: float = time.time(), is_read: bool = False) -> dict:
+def create_message(user_id: str, friend_id: str, sender_id: str, text: str = '', latent_string: str | None = None, encrypted_seed: str = '', timestamp: float = time.time(), is_read: bool = False) -> dict:
     friends = _load_friends()
     for friend in friends:
         if  friend['user_id'] == user_id and friend['friend_id'] == friend_id:
             message = {
                 "sender_id": sender_id,
                 "text": text,
-                "latent_bytes": latent_bytes,
+                "latent_string": latent_string,
                 "encrypted_seed": None,  # This should be set if encryption is used
                 "timestamp" : timestamp,
                 "is_read": is_read
@@ -104,7 +105,7 @@ def create_message(user_id: str, friend_id: str, sender_id: str, text: str = '',
                 "sender_id": message['sender_id'],
                 "text": message['text'],
                 "timestamp": message['timestamp'],
-                "latent_bytes": message['latent_bytes'],
+                "latent_string": message['latent_string'],
                 "encrypted_seed": message['encrypted_seed'],
                 "is_read": message['is_read']
             }

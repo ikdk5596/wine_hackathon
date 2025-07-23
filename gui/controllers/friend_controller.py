@@ -16,6 +16,7 @@ import numpy as np
 import io
 import torch
 from cryptography.hazmat.primitives.asymmetric import padding
+import base64
 
 class FriendController:
     _instance = None
@@ -45,8 +46,8 @@ class FriendController:
                 profile_image = base64_to_image(friend_data.get("profile_base64")) if friend_data.get("profile_base64") else None
                 messages_list = friend_data.get("messages_list", [])
                 for message in messages_list:
-                    if message.get("latent_tensor"):
-                        buffer = io.BytesIO(message["latent_tensor"])
+                    if message.get("latent_string"):
+                        buffer = io.BytesIO(base64.b64decode(message["latent_string"]))
                         npz_file = np.load(buffer)
                         message["latent_tensor"] = torch.tensor(npz_file['latent'])
                     else:
@@ -55,7 +56,7 @@ class FriendController:
                     ip=friend_data.get("ip"),
                     user_id=friend_data.get("user_id"),
                     friend_id=friend_data.get("friend_id"),
-                    public_key=friend_data.get("public_key"),
+                    public_key=serialization.load_pem_public_key(friend_data.get("public_key").encode('utf-8')),
                     profile_image=profile_image,
                     messages_list=friend_data.get("messages_list", [])
                 )
@@ -192,7 +193,7 @@ class FriendController:
         if not isinstance(image, Image.Image | None):
             raise ValueError("Image must be a PIL Image object or None")
         
-        latent_bytes = None
+        latent_string = None
         encrypted_seed = None
         encrypted_tensor = None
 
@@ -220,8 +221,9 @@ class FriendController:
             arr = encrypted_tensor.detach().cpu().numpy()
             np.savez_compressed(buffer, latent=arr)
             latent_bytes = buffer.getvalue()
+            latent_string = base64.b64encode(latent_bytes).decode("utf-8")
 
-        response = friend_api.create_message(user_id, friend_id, user_id, text, latent_bytes, encrypted_seed, is_read=True)
+        response = friend_api.create_message(user_id, friend_id, user_id, text, latent_string, encrypted_seed, is_read=True)
 
         if response.get("status") == "success":
             friend = FriendsStore().get_friend(friend_id)
@@ -260,7 +262,8 @@ class FriendController:
             }
     
     def receive_message(self, friend_id: str, text: str, latent_bytes: bytes | None, encrypted_seed: str | None, timestamp: float) -> None:
-        response = friend_api.create_message(UserStore().user_id, friend_id, friend_id, text, latent_bytes, encrypted_seed, timestamp)
+        latent_string = base64.b64encode(latent_bytes).decode("utf-8") if latent_bytes else None
+        response = friend_api.create_message(UserStore().user_id, friend_id, friend_id, text, latent_string, encrypted_seed, timestamp)
 
         if response.get("status") == "success":
             friend = FriendsStore().get_friend(friend_id)

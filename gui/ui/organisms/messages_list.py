@@ -19,12 +19,13 @@ class FriendMessage(ctk.CTkFrame):
             name_label.grid(row=0, column=1, sticky="nw", padx=(0, 0), pady=(5, 0))
 
         message_frame = ctk.CTkFrame(self, fg_color="transparent")
-        message_frame.grid(row=0 if show_profile else 1, column=1, sticky="w", padx=(74, 2), pady=(5, 0))
+        message_frame.grid(row=1 if show_profile else 0, column=1, sticky="w", padx=(0, 2) if show_profile else (74, 2), pady=(5, 0))
 
-        if message["latent_tensor"]:
+        if message["latent_tensor"] is not None:
             latent_tensor = message["latent_tensor"]
             latent_image = visualize_latent(latent_tensor)
-            latent_image_label = ctk.CTkLabel(message_frame, image=latent_image, text="")
+            tk_image = ctk.CTkImage(dark_image=latent_image, size=(64, 64))
+            latent_image_label = ctk.CTkLabel(message_frame, image=tk_image, text="")
             latent_image_label.pack(anchor="w", padx=0, pady=0)
             
         if message["text"]:
@@ -44,10 +45,11 @@ class MyMessage(ctk.CTkFrame):
     def __init__(self, master, message):
         super().__init__(master, fg_color="transparent")
 
-        if message["latent_tensor"]:
+        if message["latent_tensor"] is not None:
             latent_tensor = message["latent_tensor"]
             latent_image = visualize_latent(latent_tensor)
-            latent_image_label = ctk.CTkLabel(self, image=latent_image, text="")
+            tk_image = ctk.CTkImage(dark_image=latent_image, size=(64, 64))
+            latent_image_label = ctk.CTkLabel(self, image=tk_image, text="")
             latent_image_label.pack(anchor="e", padx=0, pady=0)
             
         msg_label = ctk.CTkLabel(
