@@ -1,18 +1,17 @@
 import customtkinter as ctk
 
 class Toast(ctk.CTkToplevel):
-    def __init__(self, master, message: str, type: str = "info", duration: int = 2000, bg_color: str = "#5670f6"):
+    def __init__(self, master, message: str, type: str = "info", duration: int = 2000):
+        # super().__init__(None)
         super().__init__(master)
         self.overrideredirect(True)
-        self.attributes("-topmost", True)
-        self.configure(bg=bg_color)
-
-        background = ctk.CTkFrame(self, fg_color=bg_color)
-        background.pack(expand=True, fill="both")
+        self.transient(master)      
+        self.lift(master)        
+        self.attributes("-topmost", False)  
 
         # frame
-        frame = ctk.CTkFrame(background, corner_radius=12, fg_color="white")
-        frame.pack(expand=True, fill="both")  # 패딩 추가!
+        frame = ctk.CTkFrame(self, fg_color="white")
+        frame.pack(expand=True, fill="both", padx=2, pady=2)
         frame.columnconfigure(1, weight=1)
 
         # icon map

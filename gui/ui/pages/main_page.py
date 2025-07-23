@@ -20,10 +20,3 @@ class MainPage(ctk.CTkFrame):
 
         self.friends_list = FriendsList(self)
         self.friends_list.pack(fill="both", expand=True)
-
-    def reset(self):
-        self.my_profile.reset()
-        
-        # self.friends_list.reset()  # Uncomment if you have a reset method in FriendsList
-        # You can also reset other components if needed
-

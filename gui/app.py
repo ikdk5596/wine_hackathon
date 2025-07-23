@@ -48,7 +48,6 @@ class App(ctk.CTk):
             raise ValueError(f"Page {page_class} not found in frames.")
         else:
             frame.tkraise()
-            frame.reset()
 
 if __name__ == "__main__":
     configure_ctk()
