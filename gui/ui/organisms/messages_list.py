@@ -11,8 +11,8 @@ class FriendMessage(ctk.CTkFrame):
 
         # Show profile image and name if specified
         if show_profile:
-            img_label = Profile(self, image=profile_image, size=62)
-            img_label.grid(row=0, column=0, rowspan=2, padx=(5, 5), pady=5, sticky="nw")
+            img_label = Profile(self, image=profile_image, size=60)
+            img_label.grid(row=0, column=0, rowspan=2, padx=(5, 10), pady=5, sticky="nw")
 
             name_label = ctk.CTkLabel(self, text=friend_id, font=ctk.CTkFont(weight="bold"), text_color="black")
             name_label.grid(row=0, column=1, sticky="nw", padx=(0, 0), pady=(5, 0))

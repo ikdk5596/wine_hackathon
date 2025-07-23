@@ -1,5 +1,6 @@
 import customtkinter as ctk
 import tkinter.filedialog as fd
+from ui.atoms.button import Button
 from states.friends_store import FriendsStore
 from states.user_store import UserStore
 from controllers.friend_controller import FriendController
@@ -17,15 +18,15 @@ class ChatInput(ctk.CTkFrame):
         label.grid(row=0, column=0, sticky="w", padx=10, pady=(5, 2), columnspan=2)
 
         # Textbox with internal scroll
-        self.textbox = ctk.CTkTextbox(self, height=80, wrap="word")  # 고정 높이
+        self.textbox = ctk.CTkTextbox(self, height=80, wrap="word") 
         self.textbox.grid(row=1, column=0, columnspan=2, sticky="nsew", padx=10, pady=(0, 10))
 
         # File picker button
-        self.file_button = ctk.CTkButton(self, text="Choose file", command=self.pick_file, width=120)
+        self.file_button = Button(self, type="white", text="Choose file", command=self.pick_file, width=100)
         self.file_button.grid(row=2, column=0, sticky="w", padx=10, pady=10)
 
         # Send button
-        self.send_button = ctk.CTkButton(self, text="Send", fg_color="#0062E2", command=self.send_message)
+        self.send_button = Button(self, text="Send", command=self.send_message, width=100)
         self.send_button.grid(row=2, column=1, sticky="e", padx=10, pady=10)
 
         self.selected_file = None

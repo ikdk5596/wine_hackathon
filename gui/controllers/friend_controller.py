@@ -257,7 +257,7 @@ class FriendController:
                     "profile_base64": image_to_base64(UserStore().profile_image) if UserStore().profile_image else None
                 }
             })
-        if response.get("type") == "response_friend":
+        elif response.get("type") == "response_friend":
             self.add_friend(
                 user_id=UserStore().user_id,
                 ip=response.get("data").get("ip"),
@@ -266,7 +266,7 @@ class FriendController:
                 profile_image=base64_to_image(response.get("data").get("profile_base64")) if response.get("data").get("profile_base64") else None
             )
         elif response.get("type") == "new_message":
-            friend_id = response.get("data").get("friend_id")
+            sender_id = response.get("data").get("sender_id")
             text = response.get("data").get("text")
             timestamp = response.get("data").get("timestamp")
-            self.receive_message(friend_id, text, timestamp)
+            self.receive_message(sender_id, text, timestamp)
