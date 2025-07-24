@@ -139,10 +139,14 @@ class FriendController:
                 friend["profile_image"] = base64_to_image(friend["profile_base64"])
                 messages_list = []
                 for message in friend["messages_list"]:
-                    buffer = io.BytesIO(base64.b64decode(message["enc_latent_string"]))
-                    npz_file = np.load(buffer)
-                    enc_latent_tensor = torch.tensor(npz_file['latent'])                    
-                    enc_seed_bytes = base64.b64decode(message.get("enc_seed_string", ""))
+                    enc_latent_tensor = None
+                    enc_seed_bytes = None
+                    if message.get("enc_latent_string"):
+                        buffer = io.BytesIO(base64.b64decode(message["enc_latent_string"]))
+                        npz_file = np.load(buffer)
+                        enc_latent_tensor = torch.tensor(npz_file['latent'])              
+                    if message.get("enc_seed_string"):      
+                        enc_seed_bytes = base64.b64decode(message["enc_seed_string"])
                     messages_list.append({
                         "sender_id": message['sender_id'],
                         "text": message['text'],
@@ -237,10 +241,15 @@ class FriendController:
             data = response.get("data")
 
             # Deserialize
-            buffer = io.BytesIO(base64.b64decode(data["enc_latent_string"]))
-            npz_file = np.load(buffer)
-            enc_latent_tensor = torch.tensor(npz_file['latent'])                    
-            enc_seed_bytes = base64.b64decode(data.get("enc_seed_string", ""))
+            enc_latent_tensor = None
+            enc_seed_bytes = None
+            if data.get("enc_latent_string"):
+                buffer = io.BytesIO(base64.b64decode(data["enc_latent_string"]))
+                npz_file = np.load(buffer)
+                enc_latent_tensor = torch.tensor(npz_file['latent'])
+            if data.get("enc_seed_string"):
+                buffer = io.BytesIO(base64.b64decode(data["enc_seed_string"]))
+                enc_seed_bytes = buffer.read()
 
             # Update FriendsStore
             message = {
@@ -369,7 +378,7 @@ class FriendController:
             friend.messages_list = [*friend.messages_list, message]
 
             # Propagation event
-            socket = ClientSocket(friend.ip)
+            socket = ClientSocket(friend.ip, friend.port)
             socket.send({
                 "type": "new_message",
                 "data": {
