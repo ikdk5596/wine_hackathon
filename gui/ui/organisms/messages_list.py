@@ -22,7 +22,7 @@ class FriendMessage(ctk.CTkFrame):
             img_label.grid(row=0, column=0, rowspan=2, padx=(5, 10), pady=5, sticky="nw")
 
             name_label = ctk.CTkLabel(self, text=friend_id, font=ctk.CTkFont(weight="bold"), text_color="black")
-            name_label.grid(row=0, column=1, sticky="nw", padx=(0, 0), pady=(5, 0))
+            name_label.grid(row=0, column=1, sticky="nw", padx=(2, 0), pady=(7, 0))
 
         # Show message content
         message_frame = ctk.CTkFrame(self, fg_color="transparent")
@@ -44,7 +44,7 @@ class FriendMessage(ctk.CTkFrame):
             msg_label = ctk.CTkLabel(
                 message_frame,
                 text=message["text"],
-                font=ctk.CTkFont(size=13),
+                font=ctk.CTkFont(size=15),
                 text_color="black",
                 fg_color="white",
                 corner_radius=6,
@@ -76,7 +76,7 @@ class MyMessage(ctk.CTkFrame):
             msg_label = ctk.CTkLabel(
                 self,
                 text=message["text"],
-                font=ctk.CTkFont(size=13),
+                font=ctk.CTkFont(size=15),
                 text_color="white",
                 fg_color="#3366cc",
                 corner_radius=6,
