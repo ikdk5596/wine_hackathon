@@ -16,7 +16,6 @@ class UserStore(Observable):
             UserStore._initialized = True 
 
     def _init_state(self):
-        print("UserStore initialized")
         self._user_id = None
         self.password = None
         self.private_key = None

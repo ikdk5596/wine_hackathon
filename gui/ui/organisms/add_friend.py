@@ -13,14 +13,14 @@ class AddFriend(ctk.CTkFrame):
         self.grid_rowconfigure(0, weight=1)
         self.grid_columnconfigure(0, weight=1)
 
-        self.ip_entry = Input(self, placeholder="Friend IP")
-        self.ip_entry.pack(pady=(20, 10))
+        self.ip_entry = Input(self, placeholder="Friend IP", width=200)
+        self.ip_entry.pack(padx=50, pady=(20, 10))
 
-        self.port_entry = Input(self, placeholder="Friend Port")
-        self.port_entry.pack(pady=(0, 20))
+        self.port_entry = Input(self, placeholder="Friend Port", width=200)
+        self.port_entry.pack(pady=(0, 10))
 
         self.button = Button(self, text="Request", command=self.add_friend)
-        self.button.pack()
+        self.button.pack(pady=(10, 20))
 
     def add_friend(self):
         ip = self.entry.get()
