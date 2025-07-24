@@ -45,6 +45,7 @@ def create_friend(user_id: str, ip:str, port: int, friend_id:str, public_key: st
         "data": {
             "user_id": user_id,
             "ip": ip,
+            "port": port,
             "friend_id": friend_id,
             "public_key": public_key,
             "profile_base64": profile_base64,
