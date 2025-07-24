@@ -1,5 +1,5 @@
-from states.observable import Observable
 from PIL import Image
+from states.observable import Observable
 
 class Friend(Observable):
     def __init__(self, user_id: str, ip: str, port: int, friend_id: str, public_key: str, profile_image: Image.Image | None, messages_list: list):

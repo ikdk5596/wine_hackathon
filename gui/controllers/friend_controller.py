@@ -137,14 +137,30 @@ class FriendController:
             for friend in data["friends"]:
                 friend["public_key"] = serialization.load_pem_public_key(friend["public_key"].encode('utf-8'))
                 friend["profile_image"] = base64_to_image(friend["profile_base64"])
+                messages_list = []
                 for message in friend["messages_list"]:
-                    if message.get("latent_string"):
-                        buffer = io.BytesIO(base64.b64decode(message["latent_string"]))
-                        npz_file = np.load(buffer)
-                        message["latent_tensor"] = torch.tensor(npz_file['latent'])
-                    else:
-                        message["latent_tensor"] = None
-                friends_list.append(Friend(*friend))
+                    buffer = io.BytesIO(base64.b64decode(message["enc_latent_string"]))
+                    npz_file = np.load(buffer)
+                    enc_latent_tensor = torch.tensor(npz_file['latent'])                    
+                    enc_seed_bytes = base64.b64decode(message.get("enc_seed_string", ""))
+                    messages_list.append({
+                        "sender_id": message['sender_id'],
+                        "text": message['text'],
+                        "enc_latent_tensor": enc_latent_tensor,
+                        "enc_seed_bytes": enc_seed_bytes,
+                        "seed_string": message['seed_string'],
+                        "timestamp": message['timestamp'],
+                        "is_read": message['is_read']
+                    })
+                friends_list.append(Friend(
+                    user_id=friend["user_id"],
+                    ip=friend["ip"],
+                    port=friend["port"],
+                    friend_id=friend["friend_id"],
+                    public_key=friend["public_key"],
+                    profile_image=friend["profile_image"],
+                    messages_list= messages_list
+                ))
             
             # Update FriendsStore
             FriendsStore().friends_list = friends_list
@@ -197,27 +213,46 @@ class FriendController:
             "message": "Friend request sent successfully"
         }
     
-    def receive_message(self, friend_id: str, text: str, latent_string: str | None, encrypted_seed: str | None, timestamp: float) -> None:
-        response = friend_api.create_message(UserStore().user_id, friend_id, friend_id, text, latent_string, encrypted_seed, timestamp)
+    def receive_message(self, friend_id: str, text: str, enc_latent_string: str | None, enc_seed_string: str | None, timestamp: float) -> None:
+        userStore = UserStore()
+        if not userStore.is_authenticated:
+            return {
+                "status": "error",
+                "message": "User is not authenticated"
+            }
+        
+        friendStore = FriendsStore()
+        friend = friendStore.get_friend(friend_id)
+        if not friend:
+            return {
+                "status": "error",
+                "message": "Friend not found"
+            }
+        
+        response = friend_api.create_message(userStore.user_id, friend_id, friend_id, text,
+                                             enc_latent_string, enc_seed_string, seed_string=None,
+                                             timestamp=timestamp, is_read=True)
 
         if response.get("status") == "success":
-            friend = FriendsStore().get_friend(friend_id)
-            if friend:
-                latent_tensor = None
-                if latent_string:
-                    buffer = io.BytesIO(base64.b64decode(latent_string))
-                    npz_file = np.load(buffer)
-                    latent_tensor = torch.tensor(npz_file['latent'])
+            data = response.get("data")
 
-                message = {
-                    "sender_id": friend_id,
-                    "text": response['text'],
-                    "timestamp": response['timestamp'],
-                    "latent_tensor": latent_tensor,
-                    "encrypted_seed": response.get('encrypted_seed', None),
-                    "is_read": response['is_read']
-                }
-                friend.messages_list = [*friend.messages_list, message]
+            # Deserialize
+            buffer = io.BytesIO(base64.b64decode(data["enc_latent_string"]))
+            npz_file = np.load(buffer)
+            enc_latent_tensor = torch.tensor(npz_file['latent'])                    
+            enc_seed_bytes = base64.b64decode(data.get("enc_seed_string", ""))
+
+            # Update FriendsStore
+            message = {
+                "sender_id": data['sender_id'],
+                "text": data['text'],
+                "timestamp": data['timestamp'],
+                "enc_latent_tensor": enc_latent_tensor,
+                "enc_seed_bytes": enc_seed_bytes,
+                "is_read": data['is_read']
+            }
+            friend.messages_list = [*friend.messages_list, message]
+            
             return {
                 "status": response.get("status", "success"),
                 "message": response.get("message", "Message sent successfully"),
@@ -233,10 +268,23 @@ class FriendController:
         if not isinstance(friend_id, str):
             raise ValueError("Friend ID must be a string")
         
+        userStore = UserStore()
+        if not userStore.is_authenticated:
+            return {
+                "status": "error",
+                "message": "User is not authenticated"
+            }
+        
         friend = FriendsStore().get_friend(friend_id)
 
         if friend:
+            for message in friend.messages_list[::-1]:
+                if message["is_read"] is False:
+                    message["is_read"] = True
+                else:
+                    break
             FriendsStore().selected_friend = friend
+
             return {
                 "status": "success",
                 "message": "Friend selected successfully",
@@ -247,73 +295,94 @@ class FriendController:
                 "message": "Friend not found"
             }
     
-    def send_message(self, user_id: str, friend_id: str, text: str = '', image: Image.Image | None = None) -> dict:
+    def send_message(self, user_id: str, friend_id: str, text: str = '' | None, image: Image.Image | None = None) -> dict:
         if not isinstance(user_id, str):
             raise ValueError("User ID must be a string")
         if not isinstance(friend_id, str):
             raise ValueError("Friend ID must be a string")
-        if not isinstance(text, str):
+        if not isinstance(text, str | None):
             raise ValueError("Message must be a string")
         if not isinstance(image, Image.Image | None):
             raise ValueError("Image must be a PIL Image object or None")
         
-        latent_bytes = None
-        latent_string = None
-        encrypted_seed = None
-        encrypted_tensor = None
+        userStore = UserStore()
+        if not userStore.is_authenticated:
+            return {
+                "status": "error",
+                "message": "User is not authenticated"
+            }
+        
+        friendStore = FriendsStore()
+        friend = friendStore.get_friend(friend_id)
+        if not friend:
+            return {
+                "status": "error",
+                "message": "Friend not found"
+            }
+        
+        enc_latent_tensor = None
+        enc_latent_string = None
+        enc_seed_bytes = None
+        enc_seed_string = None
+        seed_string = None
 
         if image:
             # encode
             latent_tensor = encode_image_to_latent(image)
             
-            # encrypt
-            seed = ''.join(random.choices(string.ascii_letters + string.digits, k=16))
-            encrypted_tensor = encrypt_latent(latent_tensor, seed)
+            # encrypt latent
+            seed_string = ''.join(random.choices(string.ascii_letters + string.digits, k=16))
+            enc_latent_tensor = encrypt_latent(latent_tensor, seed_string)
+            buffer = io.BytesIO()
+            arr = enc_latent_tensor.detach().cpu().numpy()
+            np.savez_compressed(buffer, latent=arr)
+            enc_latent_bytes = buffer.getvalue()
+            enc_latent_string = base64.b64encode(enc_latent_bytes).decode("utf-8")
             
             # encrypt_seed
-            friend = FriendsStore().get_friend(friend_id)
-            encrypted_seed_bytes = friend.public_key.encrypt(
-                seed.encode('utf-8'),
+            enc_seed_bytes = friend.public_key.encrypt(
+                seed_string.encode('utf-8'),
                 padding.OAEP(
                     mgf=padding.MGF1(algorithm=hashes.SHA256()),
                     algorithm=hashes.SHA256(),
                     label=None
                 )
             )
-            encrypted_seed = base64.b64encode(encrypted_seed_bytes).decode('utf-8')
+            enc_seed_string = base64.b64encode(enc_seed_bytes).decode('utf-8')
 
-            # latent_bytes
-            buffer = io.BytesIO()
-            arr = encrypted_tensor.detach().cpu().numpy()
-            np.savez_compressed(buffer, latent=arr)
-            latent_bytes = buffer.getvalue()
-            latent_string = base64.b64encode(latent_bytes).decode("utf-8")
-
-        response = friend_api.create_message(user_id, friend_id, user_id, text, latent_string, encrypted_seed, is_read=True)
+        response = friend_api.create_message(user_id, friend_id, user_id, text, enc_latent_string, enc_seed_string, seed_string, is_read=True)
 
         if response.get("status") == "success":
-            friend = FriendsStore().get_friend(friend_id)
-            if friend:
-                message = {
-                    "sender_id": user_id,
-                    "text": response['text'],
-                    "latent_tensor": encrypted_tensor,
-                    "encrypted_seed": response.get('encrypted_seed', None),
-                    "timestamp": response['timestamp'],
-                    "is_read": response['is_read']
-                }
-                friend.messages_list = [*friend.messages_list, message]
+            data = response.get("data")
+
+            message = {
+                "sender_id": data['sender_id'],
+                "text": data['text'],
+                "enc_latent_tensor": enc_latent_tensor,
+                "enc_seed_bytes": enc_seed_bytes,
+                "seed_string": data['seed_string'],
+                "timestamp": data['timestamp'],
+                "is_read": data['is_read']
+            }
+
+            # Update FriendsStore
+            friend.messages_list = [*friend.messages_list, message]
+
+            # Propagation event
             socket = ClientSocket(friend.ip)
             socket.send({
                 "type": "new_message",
                 "data": {
-                    "sender_id": user_id,
+                    "sender_id": data["sender_id"],
                     "text": response['text'],
+                    "enc_latent_tensor": response["enc_latent_string"],
+                    "enc_seed_string": response['enc_seed_string'],
+                    "seed_string": None,
                     "timestamp": response['timestamp'],
-                    "latent_string": latent_string,
-                    "encrypted_seed": response.get('encrypted_seed', None),
+                    "is_read": response['is_read']
                 }
             })
+
             return {
                 "status": response.get("status", "success"),
                 "message": response.get("message", "Message sent successfully"),
@@ -413,9 +482,9 @@ class FriendController:
             )
     
         elif type == "new_message":
-            sender_id = response.get("data").get("sender_id")
-            text = response.get("data").get("text")
-            latent_string = response.get("data").get("latent_string")
-            encrypted_seed = response.get("data").get("encrypted_seed")
-            timestamp = response.get("data").get("timestamp")
-            self.receive_message(sender_id, text, latent_string, encrypted_seed, timestamp)
+            sender_id = data["sender_id"]
+            text = data["text"]
+            enc_latent_string = data.get("enc_latent_tensor", None)
+            enc_seed_string = data.get("enc_seed_string", None)
+            timestamp = data["timestamp"]
+            self.receive_message(sender_id, text, enc_latent_string, enc_seed_string, timestamp)

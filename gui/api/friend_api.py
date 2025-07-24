@@ -1,7 +1,5 @@
 import time
 import json
-from cryptography.hazmat.primitives.asymmetric.rsa import RSAPublicKey
-from cryptography.hazmat.primitives import serialization
 
 FRIENDS_DB_PATH = "friends.json"
 
@@ -53,7 +51,9 @@ def create_friend(user_id: str, ip:str, port: int, friend_id:str, public_key: st
         }
     }
 
-def create_message(user_id: str, friend_id: str, sender_id: str, text: str = '', latent_string: str | None = None, encrypted_seed: str = '', timestamp: float = time.time(), is_read: bool = False) -> dict:
+def create_message(user_id: str, friend_id: str, sender_id: str, text: str | None = None,
+                   enc_latent_string: str | None = None, enc_seed_string: str | None = None, seed_string: str | None = None,
+                   timestamp: float = time.time(), is_read: bool = False) -> dict:
     friends = _load_friends()
 
     for friend in friends:
@@ -61,23 +61,28 @@ def create_message(user_id: str, friend_id: str, sender_id: str, text: str = '',
             message = {
                 "sender_id": sender_id,
                 "text": text,
-                "latent_string": latent_string,
-                "encrypted_seed": encrypted_seed,
+                "enc_latent_string": enc_latent_string,
+                "enc_seed_string": enc_seed_string,
+                "seed_string": seed_string,
                 "timestamp" : timestamp,
                 "is_read": is_read
             }
+
             friend['messages_list'].append(message)
-            with open(FRIENDS_DB_PATH, "w") as f:
-                json.dump(friends, f, indent=2)
+            _save_friends(friends)
+
             return {
                 "status": "success", 
                 "message": "Message sent successfully",
-                "sender_id": message['sender_id'],
-                "text": message['text'],
-                "timestamp": message['timestamp'],
-                "latent_string": message['latent_string'],
-                "encrypted_seed": message['encrypted_seed'],
-                "is_read": message['is_read']
+                "data": {
+                    "sender_id": sender_id,
+                    "text": text,
+                    "enc_latent_string": enc_latent_string,
+                    "enc_seed_string": enc_seed_string,
+                    "seed_string" : seed_string,
+                    "timestamp" : timestamp,
+                    "is_read": is_read
+                }
             }
     
     return {
