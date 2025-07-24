@@ -148,6 +148,9 @@ class MessagesList(ctk.CTkScrollableFrame):
             prev_sender = sender
             self.rendered_count += 1
 
+        # Scroll to the bottom
+        self.after(0, lambda: self._parent_canvas.yview_moveto(1.0))
+
     def _on_selected_friend_change(self):
         new_friend = FriendsStore().selected_friend
 

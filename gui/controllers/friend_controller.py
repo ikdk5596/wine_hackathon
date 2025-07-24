@@ -232,9 +232,10 @@ class FriendController:
                 "message": "Friend not found"
             }
         
+        is_read = friendStore.selected_friend and friendStore.selected_friend.friend_id == friend_id
         response = friend_api.create_message(userStore.user_id, friend_id, friend_id, text,
                                              enc_latent_string, enc_seed_string, seed_string=None,
-                                             timestamp=timestamp, is_read=False)
+                                             timestamp=timestamp, is_read=is_read)
 
         if response.get("status") == "success":
             data = response.get("data")
@@ -403,6 +404,20 @@ class FriendController:
                 "status": response.get("status", "error"),
                 "message": response.get("message", "Failed to send message")
             }
+
+    def unselect_friend(self) -> None:
+        userStore = UserStore()
+        if not userStore.is_authenticated:
+            return {
+                "status": "error",
+                "message": "User is not authenticated"
+            }
+        
+        FriendsStore().selected_friend = None
+        return {
+            "status": "success",
+            "message": "Friend unselected successfully"
+        }
 
     def update_friend_profile(self, user_id: str, friend_id: str, profile_image: Image.Image | None) -> dict:
         if not isinstance(friend_id, str):

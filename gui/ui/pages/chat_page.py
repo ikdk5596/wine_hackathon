@@ -3,6 +3,7 @@ from ui.atoms.banner import Banner
 from ui.atoms.button import Button
 from ui.organisms.messages_list import MessagesList
 from ui.organisms.chat_input import ChatInput
+from controllers.friend_controller import FriendController
 
 class ChatPage(ctk.CTkFrame):
     def __init__(self, master, controller, **kwargs):
@@ -30,3 +31,4 @@ class ChatPage(ctk.CTkFrame):
 
     def go_back(self):
         self.controller.show_frame("MainPage")
+        FriendController().unselect_friend()
