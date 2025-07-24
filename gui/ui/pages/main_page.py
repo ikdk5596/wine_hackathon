@@ -12,7 +12,7 @@ class MainPage(ctk.CTkFrame):
         self.header = Banner(self)
         self.header.pack(fill="x")
 
-        self.my_profile = MyProfile(self)
+        self.my_profile = MyProfile(self, controller)
         self.my_profile.pack(fill="x")
 
         top_border_frame = ctk.CTkFrame(self, height=2, fg_color="#e4e4e4")

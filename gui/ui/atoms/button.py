@@ -19,14 +19,12 @@ class Button(ctk.CTkButton):
             **kwargs
         )
 
-        # self.pack(pady=(30, 10))
-
     def _get_style(self, type: str):
         if type == "white":
             return {
                 "fg_color": "#ffffff",
                 "hover_color": "#f0f0f0",
-                "text_color": "#333333",
+                "text_color": "#474747",
                 "border_color": "#cccccc",
                 "border_width": 1,
             }

@@ -17,11 +17,20 @@ class SignupPage(ctk.CTkFrame):
         # title
         title = ctk.CTkLabel(
             self.center_frame,
-            text="EncTalk",
+            text="Let's Sign Up",
             font=("Helvetica", 32, "bold", "italic"),
             text_color="white"
         )
-        title.pack(pady=(0, 40))
+        title.pack(pady=(0, 10))
+
+        # Subtitle
+        subtitle = ctk.CTkLabel(
+            self.center_frame,
+            text="Your data is safely stored in your local device.",
+            font=("Helvetica", 16),
+            text_color="white"
+        )
+        subtitle.pack(pady=(0, 30))
 
         # input - ID
         self.id_input = Input(
@@ -64,13 +73,16 @@ class SignupPage(ctk.CTkFrame):
         try:
             result = UserController().sign_up(user_id, password)
             if result['status'] == 'success':
-                Toast(self, result['message'], type="success", duration=2000)
+                Toast(self.controller, result['message'], type="success", duration=2000)
                 self.controller.show_frame("LoginPage")
             else:
-                Toast(self, result['message'], type="error", duration=2000)
+                Toast(self.controller, result['message'], type="error", duration=2000)
         except Exception as e:
-            Toast(self, f"Error: {str(e)}", type="error", duration=2000)
+            Toast(self.controller, f"Error: {str(e)}", type="error", duration=2000)
 
     def handle_login(self):
+        self.id_input.clear()
+        self.pw_input.clear()
+
         self.controller.show_frame("LoginPage")
 

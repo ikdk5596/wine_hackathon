@@ -1,10 +1,11 @@
+from PIL import Image
+from cryptography.hazmat.primitives import serialization
 from api import user_api
 from utils.image import base64_to_image, image_to_base64
 from states.user_store import UserStore
 from states.friends_store import FriendsStore
 from utils.socket.server_socket import ServerSocket
 from utils.socket.client_socket import ClientSocket
-from PIL import Image
 from controllers.friend_controller import FriendController
 
 class UserController:
@@ -23,23 +24,39 @@ class UserController:
             UserController._initialized = True 
 
     def _init_state(self):
-        print("[UserController] Initialized")  # 처음 1번만 호출됨
         ServerSocket().add_callback(self._handle_socket_response)
 
     def login(self, user_id: str, password:str) -> dict:
-        if not isinstance(user_id, str):
-            raise ValueError("User ID and password must be strings")
-        if not isinstance(password, str):
-            raise ValueError("User ID and password must be strings")
+        if not isinstance(user_id, str) or user_id == "":
+            raise ValueError("User ID must be strings")
+        if not isinstance(password, str) or password == "":
+            raise ValueError("User password must be strings")
         
         response = user_api.authenticate_user(user_id, password)
 
         if response.get("status") == "success":
-            UserStore().user_id = response.get("user_id")
-            UserStore().private_key = response.get("private_key")
-            UserStore().public_key = response.get("public_key")
-            UserStore().profile_image = base64_to_image(response.get("profile_base64"))
+            data = response.get("data")
+            
+            # Deserialize data
+            private_key = serialization.load_pem_private_key(
+                data["private_key"].encode('utf-8'),
+                password=None
+            )
+            public_key = serialization.load_pem_public_key(
+                data["public_key"].encode('utf-8')
+            )
+            profile_image = base64_to_image(data.get("profile_base64"))
+
+            # Update UserStore
+            userStore = UserStore()
+            userStore.user_id = data["user_id"]
+            userStore.private_key = private_key
+            userStore.public_key = public_key
+            userStore.profile_image = profile_image
+
+            # Propagation event
             FriendController().load_friends()
+
             return {
                 "status": response.get("status", "success"),
                 "message": response.get("message", "Login successful"),
@@ -59,16 +76,13 @@ class UserController:
         }
         
     def sign_up(self, user_id: str, password: str) -> dict:
-        print(1)
-        if not isinstance(user_id, str):
+        if not isinstance(user_id, str) or user_id == "":
             raise ValueError("User ID and password must be strings")
-        if not isinstance(password, str):
+        if not isinstance(password, str) or password == "":
             raise ValueError("User ID and password must be strings")
         
         response = user_api.create_user(user_id, password)
-        print(response)
-
-
+        
         if response.get("status") == "success":
             return {
                 "status": response.get("status", "success"),
@@ -86,7 +100,8 @@ class UserController:
         if not isinstance(profile_image, Image.Image | None):
             raise ValueError("Profile image must be a PIL Image object")
         
-        if not UserStore().is_authenticated:
+        userStore = UserStore()
+        if not userStore.is_authenticated:
             return {
                 "status": "error",
                 "message": "User is not authenticated"
@@ -96,21 +111,25 @@ class UserController:
         response = user_api.update_user_profile(user_id, profile_base64)
         
         if response.get("status") == "success":
-            UserStore().profile_image = base64_to_image(response.get("profile_base64"))
+            data = response.get("data")
+
+            # Update UserStore
+            userStore.profile_image = base64_to_image(data["profile_base64"])
+            
+            # Propagation event
             for friend in FriendsStore().friends_list:
-                friend_socket = ClientSocket(friend.ip)
-                print(f"Sending profile update to {friend.ip}")
+                friend_socket = ClientSocket(friend.ip, friend.port)
                 friend_socket.send({
                     "type": "profile_update",
                     "data": {
-                        "user_id": response.get("user_id"),
-                        "profile_base64": response.get("profile_base64"),
+                        "user_id": data["user_id"],
+                        "profile_base64": data["profile_base64"],
                         }
                     })
+                
             return {
                 "status": response.get("status", "success"),
                 "message": response.get("message", "Profile updated successfully"),
-                "profile_base64": response.get("profile_base64")
             }
         else:
             return {
@@ -119,8 +138,17 @@ class UserController:
             }
         
     def _handle_socket_response(self, response):
-        if response.get("type") == "profile_update":
+        userStore = UserStore()
+
+        type = response.get("type")
+        data = response.get("data")
+
+        if type == "profile_update":
+            user_id =  userStore.user_id
+            friend_id = data.get("user_id")
+            profile_image = base64_to_image(data.get("profile_base64"))
             FriendController().update_friend_profile(
-                response.get("data").get("user_id"),
-                base64_to_image(response.get("data").get("profile_base64"))
+                user_id,
+                friend_id,
+                profile_image
             )

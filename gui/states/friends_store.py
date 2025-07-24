@@ -1,10 +1,11 @@
-from states.observable import Observable
 from PIL import Image
+from states.observable import Observable
 
 class Friend(Observable):
-    def __init__(self, ip: str, user_id: str, friend_id: str, public_key: str, profile_image: Image.Image | None, messages_list: list):
+    def __init__(self, user_id: str, ip: str, port: int, friend_id: str, public_key: str, profile_image: Image.Image | None, messages_list: list):
         super().__init__()
         self.ip = ip
+        self.port = port
         self.user_id = user_id
         self.friend_id = friend_id
         self.public_key = public_key

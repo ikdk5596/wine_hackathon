@@ -1,10 +1,9 @@
 import customtkinter as ctk
-from states.friends_store import FriendsStore, Friend
-from states.user_store import UserStore
 from ui.atoms.modal import Modal
 from ui.atoms.button import Button
 from ui.atoms.profile import Profile
 from ui.organisms.add_friend import AddFriend
+from states.friends_store import FriendsStore, Friend
 from controllers.friend_controller import FriendController
 
 class FriendItem(ctk.CTkFrame):
@@ -17,15 +16,28 @@ class FriendItem(ctk.CTkFrame):
         self.grid_rowconfigure(0, weight=1)
         self.grid_rowconfigure(1, weight=1)
         self.grid_columnconfigure(1, weight=1)
-        
-        self.profile = Profile(self, image=friend.profile_image, size=62)
+
+        self.profile = Profile(self, image=friend.profile_image, size=60)
         self.profile.grid(row=0, column=0, rowspan=2, padx=(10, 20), pady=(15, 15))
 
-        self.name_label = ctk.CTkLabel(self, text=friend.friend_id, font=("Helvetica", 13, "bold"), anchor="w")
-        self.name_label.grid(row=0, column=1, sticky="ws", pady=(8, 0))
+        self.name_label = ctk.CTkLabel(self, text=friend.friend_id, font=("Helvetica", 14, "bold"), anchor="w")
+        self.name_label.grid(row=0, column=1, sticky="ws", pady=(6, 0))
 
-        self.message_label = ctk.CTkLabel(self, text=friend.messages_list[-1]["text"] if friend.messages_list else "", font=("Helvetica", 13), anchor="w")
-        self.message_label.grid(row=1, column=1, sticky="nw")
+        last_message = friend.messages_list[-1] if friend.messages_list else None
+        last_message = '사진' if not last_message or not last_message["text"] else last_message['text']
+        self.message_label = ctk.CTkLabel(self, text=last_message, font=("Helvetica", 14), anchor="w")
+        self.message_label.grid(row=1, column=1, sticky="nw", pady=(0, 10))
+
+        unread_count = 0
+        for message in friend.messages_list[::-1]:
+            if not message["is_read"]:
+                unread_count += 1
+            else:
+                break
+        self.unread_count_label = ctk.CTkLabel(self, text=str(unread_count), font=("Helvetica", 12), text_color="white", fg_color="#cf4f4a", corner_radius=9, width=18, height=18)
+        self.unread_count_label.grid(row=0, column=2, sticky="ne", padx=(0, 10), pady=(8, 0))
+        if unread_count == 0:
+            self.unread_count_label.grid_remove()
 
         self.bind("<Enter>", self._on_hover)
         self.bind("<Leave>", self._off_hover)
@@ -50,7 +62,20 @@ class FriendItem(ctk.CTkFrame):
     def _on_messages_list_change(self):
         if self.friend.messages_list:
             last_message = self.friend.messages_list[-1]
-            self.message_label.configure(text=last_message["text"])
+            last_message = '사진' if not last_message["text"] else last_message['text']
+            self.message_label.configure(text=last_message)
+
+            unread_count = 0
+            for message in self.friend.messages_list[::-1]:
+                if not message["is_read"]:
+                    unread_count += 1
+                else:
+                    break
+            self.unread_count_label.configure(text=str(unread_count))
+            if unread_count == 0:
+                self.unread_count_label.grid_remove()
+            else:
+                self.unread_count_label.grid()
         else:
             self.message_label.configure(text="")
 
@@ -66,7 +91,7 @@ class FriendsList(ctk.CTkFrame):
         title = ctk.CTkLabel(title_frame, text="Friends", font=("Helvetica", 14), text_color="gray")
         title.pack(side="left")
 
-        self.add_button = Button(title_frame, type="primary", text="+", width=12, height=12, command=self.open_modal)
+        self.add_button = Button(title_frame, type="white", text="+", width=12, height=12, command=self._on_click_plus_button)
         self.add_button.pack(side="right")
 
         self.items_frame = ctk.CTkFrame(self, fg_color="transparent")
@@ -74,11 +99,8 @@ class FriendsList(ctk.CTkFrame):
 
         FriendsStore().add_observer("friends_list", self._on_friends_list_change)
 
-    def open_modal(self):
-        Modal(self, AddFriend)
-
-    def delete_friend(self, user_id):
-        FriendController().delete_friend(user_id)
+    def _on_click_plus_button(self):
+        Modal(self, lambda *args, **kwargs: AddFriend(*args, controller=self.controller, **kwargs))
 
     def _on_friends_list_change(self):
         for widget in self.items_frame.winfo_children():
@@ -87,5 +109,5 @@ class FriendsList(ctk.CTkFrame):
         for friend in FriendsStore().friends_list:
             item = FriendItem(self.items_frame, self.controller, friend)
             item.pack(fill="x", padx=10)
-            # item.bind("<Button-1>", lambda e, user_id=friend["user_id"]: self.controller.open_chat(user_id))
+
 
