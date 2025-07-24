@@ -1,7 +1,7 @@
 import customtkinter as ctk
 from PIL import Image, ImageDraw
 
-class ImageFrame(ctk.CTkFrame):
+class ImageFrame(ctk.CTkLabel):
     def __init__(self, master, image: Image.Image, width=200, height=200, border_radius=20, **kwargs):
         super().__init__(master, width=width, height=height, fg_color="transparent", **kwargs)
         self.width = width
@@ -21,7 +21,7 @@ class ImageFrame(ctk.CTkFrame):
         pil_image.putalpha(mask)
 
         # show image
-        ctk_image = ctk.CTkImage(pil_image, size=(self.size, self.size))
+        ctk_image = ctk.CTkImage(pil_image, size=(self.width, self.height))
         self.configure(image=ctk_image)
 
 
