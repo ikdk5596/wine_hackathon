@@ -1,9 +1,8 @@
-import json
 import os
+import json
 import hashlib
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives import serialization
-
 
 USER_DB_PATH = "users.json"
 
@@ -26,12 +25,19 @@ def _save_users(users: list):
     with open(USER_DB_PATH, "w") as f:
         json.dump(users, f, indent=2)
 
-def register_user(user_id: str, password: str) -> bool:
+# api
+def create_user(user_id: str, password: str) -> dict:
     users = _load_users()
     for user in users:
         if user["user_id"] == user_id:
-            return False    # User already exists
+            return {
+                "status": "error",
+                "message": "User already exists"
+            }
         
+    print(f"Creating user: {user_id}")
+    
+    # Create a new key pair for the user
     private_key, public_key = _create_key_pair()
     private_key = private_key.private_bytes(
         encoding=serialization.Encoding.PEM,
@@ -48,25 +54,43 @@ def register_user(user_id: str, password: str) -> bool:
         "password": _hash_password(password),
         "private_key": private_key,
         "public_key": public_key,
-        "profile": None
+        "profile_base64": None
     })
     _save_users(users)
-    return True
 
-def update_profile(user_id: str, profile: str) -> bool:
+    return {
+        "status": "success",
+        "message": "User created successfully",
+        "user_id": user_id,
+        "private_key": private_key,
+        "public_key": public_key,
+        "profile_base64": None
+    }
+
+def update_user_profile(user_id: str, profile_base64: str | None) -> dict:
     users = _load_users()
     for user in users:
         if user["user_id"] == user_id:
-            user["profile"] = profile
+            user["profile_base64"] = profile_base64
             _save_users(users)
-            return True
-    return False
+            return {
+                "status": "success",
+                "message": "Profile updated successfully",
+                "user_id": user_id,
+                "profile_base64": profile_base64
+            }
+        
+    return {
+        "status": "error",
+        "message": "User not found"
+    }
 
-def authenticate_user(user_id: str, password: str) -> bool | dict:
+def authenticate_user(user_id: str, password: str) -> dict:
     users = _load_users()
     hashed = _hash_password(password)
     for user in users:
         if user["user_id"] == user_id and user["password"] == hashed:
+            # Load the private key for the user
             private_key = serialization.load_pem_private_key(
                 user["private_key"].encode('utf-8'),
                 password=None
@@ -75,10 +99,16 @@ def authenticate_user(user_id: str, password: str) -> bool | dict:
                 user["public_key"].encode('utf-8')
             )
             return {
+                "status": "success",
+                "message": "Authentication successful",
                 "user_id": user["user_id"],
                 "password": user.get("password", None),
                 "private_key": private_key,
                 "public_key": public_key,
-                "profile": user.get("profile", None)
+                "profile_base64": user.get("profile_base64", None)
             }
-    return False
+        
+    return {
+        "status": "error",
+        "message": "Invalid user ID or password"
+    }

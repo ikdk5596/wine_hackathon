@@ -3,8 +3,7 @@ from ui.atoms.input import Input
 from ui.atoms.button import Button
 from ui.atoms.link import Link
 from ui.atoms.toast import Toast
-from api import users
-from states.user_store import UserStore
+from controllers.user_controller import UserController
 
 class LoginPage(ctk.CTkFrame):
     def __init__(self, master, controller, **kwargs):
@@ -58,22 +57,19 @@ class LoginPage(ctk.CTkFrame):
         )
         self.signup_link.pack()
 
-    def reset(self):
-        self.id_input.delete(0, 'end')
-        self.pw_input.delete(0, 'end')
-
     def handle_login(self):
         user_id = self.id_input.get()
         password = self.pw_input.get()
 
-        result = UserStore().login(user_id, password)
-        if result:
-            Toast(self, "Login successful!", type="success", duration=2000)
-            print(UserStore().user_id)
+        # try:
+        result = UserController().login(user_id, password)
+        if result['status'] == 'success':
+            Toast(self, result['message'], type="success", duration=2000)
             self.controller.show_frame("MainPage")
         else:
             Toast(self, "Login failed!", type="error", duration=2000)
-
+        # except Exception as e:
+        #     Toast(self, f"Error: {str(e)}", type="error", duration=2000)
 
     def handle_signup(self):
         self.controller.show_frame("SignupPage")

@@ -10,6 +10,9 @@ vqvae.to(torch_device)
 
 def encode_image_to_latent(image: PIL.Image.Image) -> torch.Tensor:
     # Preprocess the image
+    if image.mode == 'RGBA':
+        image = image.convert('RGB')
+        
     transform = transforms.Compose([
         transforms.Resize((256, 256)),
         transforms.ToTensor(),
