@@ -63,7 +63,7 @@ class FriendController:
         ).decode('utf-8')
         profile_base64 = image_to_base64(profile_image) if profile_image else None
 
-        response = friend_api.create_friend(user_id, ip, friend_id, public_key, profile_base64)
+        response = friend_api.create_friend(user_id, ip, port, friend_id, public_key, profile_base64)
 
         if response.get("status") == "success":
             data = response.get("data")
@@ -173,10 +173,10 @@ class FriendController:
             }
         
         # Serialize
-        public_key = userStore.public_key(
+        public_key = userStore.public_key.public_bytes(
             encoding=serialization.Encoding.PEM,
             format=serialization.PublicFormat.SubjectPublicKeyInfo
-        ).decode('utf-8'), 
+        ).decode('utf-8')
         profile_base64 = image_to_base64(userStore.profile_image)
 
         # Send request
@@ -398,7 +398,7 @@ class FriendController:
                     "profile_base64": profile_base64
                 }
             })
-            
+
         elif type == "response_friend":
             # Accept friend request
             public_key = serialization.load_pem_public_key(data["public_key"].encode('utf-8'))

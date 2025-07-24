@@ -23,7 +23,7 @@ class AddFriend(ctk.CTkFrame):
         self.button.pack(pady=(10, 20))
 
     def add_friend(self):
-        ip = self.entry.get()
+        ip = self.ip_entry.get()
         port = int(self.port_entry.get())
 
         try:
