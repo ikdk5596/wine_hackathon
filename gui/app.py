@@ -45,7 +45,6 @@ class App(ctk.CTk):
 
     def show_frame(self, page_class):
         frame = self.frames.get(page_class)
-        print(f"Showing frame: {page_class}")
         if frame is None:
             raise ValueError(f"Page {page_class} not found in frames.")
         else:
