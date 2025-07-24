@@ -2,7 +2,7 @@ import customtkinter as ctk
 from ui.atoms.button import Button
 
 class Modal(ctk.CTkToplevel):
-    def __init__(self, parent, child_widget_factory, width=300, height=200, margin=20):
+    def __init__(self, parent, child_widget_factory, width=300, height=200, margin=20, **kwargs):
         super().__init__(parent)
         self.withdraw()
         self.overrideredirect(True)
@@ -34,7 +34,7 @@ class Modal(ctk.CTkToplevel):
         close_btn.grid(row=0, column=0, sticky="ne", padx=5, pady=5)
 
         # content area
-        content = child_widget_factory(self.modal_frame)
+        content = child_widget_factory(self.modal_frame, **kwargs)
         content.grid(row=1, column=0, sticky="nsew")
 
         self.deiconify()    

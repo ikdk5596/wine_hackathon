@@ -183,7 +183,6 @@ class FriendController:
             raise ValueError(f"Friend with ID {friend_id} not found")
     
     def send_message(self, user_id: str, friend_id: str, text: str = '', image: Image.Image | None = None) -> dict:
-        print("???")
         if not isinstance(user_id, str):
             raise ValueError("User ID must be a string")
         if not isinstance(friend_id, str):
@@ -193,6 +192,7 @@ class FriendController:
         if not isinstance(image, Image.Image | None):
             raise ValueError("Image must be a PIL Image object or None")
         
+        latent_bytes = None
         latent_string = None
         encrypted_seed = None
         encrypted_tensor = None
@@ -207,7 +207,7 @@ class FriendController:
             
             # encrypt_seed
             friend = FriendsStore().get_friend(friend_id)
-            encrypted_seed = friend.public_key.encrypt(
+            encrypted_seed_bytes = friend.public_key.encrypt(
                 seed.encode('utf-8'),
                 padding.OAEP(
                     mgf=padding.MGF1(algorithm=hashes.SHA256()),
@@ -215,6 +215,7 @@ class FriendController:
                     label=None
                 )
             )
+            encrypted_seed = base64.b64encode(encrypted_seed_bytes).decode('utf-8')
 
             # latent_bytes
             buffer = io.BytesIO()
@@ -227,7 +228,6 @@ class FriendController:
 
         if response.get("status") == "success":
             friend = FriendsStore().get_friend(friend_id)
-            print("friend:", friend)
             if friend:
                 message = {
                     "sender_id": user_id,
@@ -238,7 +238,6 @@ class FriendController:
                     "is_read": response['is_read']
                 }
                 friend.messages_list = [*friend.messages_list, message]
-                print(friend.messages_list)
             socket = ClientSocket(friend.ip)
             socket.send({
                 "type": "new_message",
@@ -246,7 +245,7 @@ class FriendController:
                     "sender_id": user_id,
                     "text": response['text'],
                     "timestamp": response['timestamp'],
-                    "latent_bytes": response.get('latent_bytes', None),
+                    "latent_string": latent_string,
                     "encrypted_seed": response.get('encrypted_seed', None),
                 }
             })
@@ -260,16 +259,16 @@ class FriendController:
                 "status": response.get("status", "error"),
                 "message": response.get("message", "Failed to send message")
             }
-    
-    def receive_message(self, friend_id: str, text: str, latent_bytes: bytes | None, encrypted_seed: str | None, timestamp: float) -> None:
-        latent_string = base64.b64encode(latent_bytes).decode("utf-8") if latent_bytes else None
+
+    def receive_message(self, friend_id: str, text: str, latent_string: str | None, encrypted_seed: str | None, timestamp: float) -> None:
         response = friend_api.create_message(UserStore().user_id, friend_id, friend_id, text, latent_string, encrypted_seed, timestamp)
 
         if response.get("status") == "success":
             friend = FriendsStore().get_friend(friend_id)
             if friend:
-                if latent_bytes:
-                    buffer = io.BytesIO(latent_bytes)
+                latent_tensor = None
+                if latent_string:
+                    buffer = io.BytesIO(base64.b64decode(latent_string))
                     npz_file = np.load(buffer)
                     latent_tensor = torch.tensor(npz_file['latent'])
 
@@ -327,7 +326,7 @@ class FriendController:
         elif response.get("type") == "new_message":
             sender_id = response.get("data").get("sender_id")
             text = response.get("data").get("text")
-            latent_bytes = response.get("data").get("latent_bytes")
+            latent_string = response.get("data").get("latent_string")
             encrypted_seed = response.get("data").get("encrypted_seed")
             timestamp = response.get("data").get("timestamp")
-            self.receive_message(sender_id, text, latent_bytes, encrypted_seed, timestamp)
+            self.receive_message(sender_id, text, latent_string, encrypted_seed, timestamp)

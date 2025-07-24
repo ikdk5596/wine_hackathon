@@ -86,13 +86,14 @@ def delete_friend(user_id: str, friend_id: str) -> dict:
 
 def create_message(user_id: str, friend_id: str, sender_id: str, text: str = '', latent_string: str | None = None, encrypted_seed: str = '', timestamp: float = time.time(), is_read: bool = False) -> dict:
     friends = _load_friends()
+    print(type(latent_string), type(encrypted_seed))
     for friend in friends:
         if  friend['user_id'] == user_id and friend['friend_id'] == friend_id:
             message = {
                 "sender_id": sender_id,
                 "text": text,
                 "latent_string": latent_string,
-                "encrypted_seed": None,  # This should be set if encryption is used
+                "encrypted_seed": encrypted_seed,
                 "timestamp" : timestamp,
                 "is_read": is_read
             }

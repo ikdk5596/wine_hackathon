@@ -3,12 +3,15 @@ from PIL import Image
 from states.friends_store import FriendsStore
 from states.user_store import UserStore
 from ui.atoms.profile import Profile
+from ui.atoms.modal import Modal
 from utils.core.encoding import visualize_latent
+from ui.organisms.decrypt_image import DecryptImage
 
 class FriendMessage(ctk.CTkFrame):
     def __init__(self, master, message, friend_id: str, profile_image: Image.Image | None, show_profile: bool):
         super().__init__(master, fg_color="transparent")
         self.columnconfigure(1, weight=1)
+        self.message = message
 
         # Show profile image and name if specified
         if show_profile:
@@ -27,6 +30,7 @@ class FriendMessage(ctk.CTkFrame):
             tk_image = ctk.CTkImage(dark_image=latent_image, size=(64, 64))
             latent_image_label = ctk.CTkLabel(message_frame, image=tk_image, text="")
             latent_image_label.pack(anchor="w", padx=0, pady=0)
+            latent_image_label.bind("<Button-1>", self._on_click_image)
             
         if message["text"]:
             msg_label = ctk.CTkLabel(
@@ -40,6 +44,12 @@ class FriendMessage(ctk.CTkFrame):
             )
             msg_label.pack(anchor="w", padx=0, pady=0)
 
+    def _on_click_image(self, event):
+        def show_decrypt_image(*args, **kwargs):
+            return DecryptImage(*args, message=self.message, **kwargs)
+
+        Modal(self, show_decrypt_image, height=500)
+
 
 class MyMessage(ctk.CTkFrame):
     def __init__(self, master, message):
@@ -52,21 +62,22 @@ class MyMessage(ctk.CTkFrame):
             latent_image_label = ctk.CTkLabel(self, image=tk_image, text="")
             latent_image_label.pack(anchor="e", padx=0, pady=0)
             
-        msg_label = ctk.CTkLabel(
-            self,
-            text=message["text"],
-            font=ctk.CTkFont(size=13),
-            text_color="white",
-            fg_color="#3366cc",
-            corner_radius=6,
-            height=30,
-            justify="left",
-            anchor="w",
-            wraplength=250,
-            padx=10,
-            pady=6
-        )
-        msg_label.pack(anchor="e", padx=0, pady=0)
+        if message["text"]:
+            msg_label = ctk.CTkLabel(
+                self,
+                text=message["text"],
+                font=ctk.CTkFont(size=13),
+                text_color="white",
+                fg_color="#3366cc",
+                corner_radius=6,
+                height=30,
+                justify="left",
+                anchor="w",
+                wraplength=250,
+                padx=10,
+                pady=6
+            )
+            msg_label.pack(anchor="e", padx=0, pady=0)
 
 
 class MessagesList(ctk.CTkScrollableFrame):
@@ -100,7 +111,6 @@ class MessagesList(ctk.CTkScrollableFrame):
             widget.destroy()
 
         prev_sender = None
-        print(self.selected_friend.messages_list)
         if self.selected_friend:
             for message in self.selected_friend.messages_list:
                 sender = message["sender_id"]
