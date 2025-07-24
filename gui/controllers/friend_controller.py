@@ -1,22 +1,21 @@
+import io
+import base64
+import random
+import string
+import torch
+import numpy as np
+from PIL import Image
 from api import friend_api
+from utils.network import get_my_ip, get_my_port
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric.rsa import RSAPublicKey
+from utils.core.encoding import encode_image_to_latent
+from utils.core.encryption import encrypt_latent, encrypt_with_RSAKey
+from utils.socket.server_socket import ServerSocket
+from utils.socket.client_socket import ClientSocket
 from utils.image import base64_to_image, image_to_base64
 from states.user_store import UserStore
 from states.friends_store import FriendsStore, Friend
-from utils.socket.server_socket import ServerSocket
-from utils.socket.client_socket import ClientSocket
-from PIL import Image
-from utils.network import get_my_ip, get_my_port
-from cryptography.hazmat.primitives import serialization, hashes
-from cryptography.hazmat.primitives.asymmetric.rsa import RSAPublicKey
-from utils.core.encoding import encode_image_to_latent
-from utils.core.encryption import decrypt_latent, encrypt_latent
-import random
-import string
-import numpy as np
-import io
-import torch
-from cryptography.hazmat.primitives.asymmetric import padding
-import base64
 
 class FriendController:
     _instance = None
@@ -358,14 +357,7 @@ class FriendController:
             enc_latent_string = base64.b64encode(enc_latent_bytes).decode("utf-8")
             
             # encrypt_seed
-            enc_seed_bytes = friend.public_key.encrypt(
-                seed_string.encode('utf-8'),
-                padding.OAEP(
-                    mgf=padding.MGF1(algorithm=hashes.SHA256()),
-                    algorithm=hashes.SHA256(),
-                    label=None
-                )
-            )
+            enc_seed_bytes = encrypt_with_RSAKey(seed_string.encode('utf-8'), friend.public_key)
             enc_seed_string = base64.b64encode(enc_seed_bytes).decode('utf-8')
 
         response = friend_api.create_message(user_id, friend_id, user_id, text, enc_latent_string, enc_seed_string, seed_string, is_read=True)

@@ -1,19 +1,15 @@
+import io
 import customtkinter as ctk
+import tkinter.filedialog as fd
 from ui.atoms.toast import Toast
 from ui.atoms.button import Button
 from ui.atoms.input import Input
-from utils.core.encoding import decode_latent_to_image
-from utils.core.encryption import decrypt_latent
-from utils.image import latent_to_gray_image
-from controllers.friend_controller import FriendController
-from controllers.user_controller import UserController
-from states.user_store import UserStore
-from cryptography.hazmat.primitives.asymmetric import rsa, padding
-from cryptography.hazmat.primitives import hashes
-import io
 from ui.atoms.image_frame import ImageFrame
-from PIL import Image
-import tkinter.filedialog as fd
+from utils.core.encoding import decode_latent_to_image
+from utils.core.encryption import decrypt_latent, decrypt_with_RSAKey
+from utils.image import latent_to_gray_image
+from states.user_store import UserStore
+from controllers.user_controller import UserController
 
 class DecryptImage(ctk.CTkFrame):
     def __init__(self, master, message):
@@ -55,14 +51,7 @@ class DecryptImage(ctk.CTkFrame):
             if result['status'] == 'success':
                 # decrypt seed
                 enc_seed_bytes = self.message["enc_seed_bytes"]
-                seed_bytes = UserStore().private_key.decrypt(
-                    enc_seed_bytes,
-                    padding.OAEP(
-                        mgf=padding.MGF1(algorithm=hashes.SHA256()),
-                        algorithm=hashes.SHA256(),
-                        label=None
-                    )
-                )
+                seed_bytes = decrypt_with_RSAKey(enc_seed_bytes, UserStore().private_key)
                 seed_string = seed_bytes.decode('utf-8')  # Ensure seed is a string
             # decrypt latent tensor
             latent_tensor = decrypt_latent(self.message['enc_latent_tensor'], seed_string)
