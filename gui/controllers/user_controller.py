@@ -82,7 +82,7 @@ class UserController:
             raise ValueError("User ID and password must be strings")
         
         response = user_api.create_user(user_id, password)
-
+        
         if response.get("status") == "success":
             return {
                 "status": response.get("status", "success"),
@@ -101,7 +101,6 @@ class UserController:
             raise ValueError("Profile image must be a PIL Image object")
         
         userStore = UserStore()
-
         if not userStore.is_authenticated:
             return {
                 "status": "error",

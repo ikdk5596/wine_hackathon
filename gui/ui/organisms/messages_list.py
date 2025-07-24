@@ -59,7 +59,6 @@ class FriendMessage(ctk.CTkFrame):
 class MyMessage(ctk.CTkFrame):
     def __init__(self, master, message):
         super().__init__(master, fg_color="transparent")
-
         if message["enc_latent_tensor"] is not None:
             latent_tensor = decrypt_latent(message["enc_latent_tensor"], message["seed_string"])
             latent_image = decode_latent_to_image(latent_tensor)

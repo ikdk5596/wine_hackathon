@@ -1,2 +1,5 @@
-# wine_hackathon
-A repository for hackathon participants
+# Wine hackathon
+
+요즘, 점차 모든 것이 공유되고 하나의 인터넷으로 전세계가 연결 되면서 해킹 사건이 큰 사회적 문제로 대두되고 있다. 대부분의 회사가 보안을 강화하면서 이를 차단하려 하지만, 해킹의 원천 차단은 불가능한 것이 현실이다.
+
+본 팀은 만약에 

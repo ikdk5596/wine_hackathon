@@ -16,7 +16,7 @@ class FriendItem(ctk.CTkFrame):
         self.grid_rowconfigure(0, weight=1)
         self.grid_rowconfigure(1, weight=1)
         self.grid_columnconfigure(1, weight=1)
-        
+
         self.profile = Profile(self, image=friend.profile_image, size=60)
         self.profile.grid(row=0, column=0, rowspan=2, padx=(10, 20), pady=(15, 15))
 

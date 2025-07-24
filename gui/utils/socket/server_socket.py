@@ -46,6 +46,7 @@ class ServerSocket:
 
             while True:
                 conn, addr = s.accept()
+                print(f"[ServerSocket] Connection from {addr}")
                 with conn:
                     buffer = b""
                     while True:

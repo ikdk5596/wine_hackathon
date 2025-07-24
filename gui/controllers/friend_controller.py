@@ -82,7 +82,7 @@ class FriendController:
                 messages_list=[]
             )
             FriendsStore().add_friend(friend)
-
+            
             return {
                 "status": response.get("status", "success"),
                 "message": response.get("message", "Friend added successfully"),
@@ -276,7 +276,7 @@ class FriendController:
     def select_friend(self, friend_id: str) -> None:
         if not isinstance(friend_id, str):
             raise ValueError("Friend ID must be a string")
-        
+            
         userStore = UserStore()
         if not userStore.is_authenticated:
             return {

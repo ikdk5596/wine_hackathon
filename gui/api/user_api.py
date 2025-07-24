@@ -72,7 +72,6 @@ def create_user(user_id: str, password: str) -> dict:
         format=serialization.PublicFormat.SubjectPublicKeyInfo
     ).decode('utf-8')
 
-    # Save user
     users.append({
         "user_id": user_id,
         "password": _hash_password(password),
@@ -95,7 +94,7 @@ def create_user(user_id: str, password: str) -> dict:
 
 def update_user_profile(user_id: str, profile_base64: str | None) -> dict:
     users = _load_users()
-
+    
     for user in users:
         if user["user_id"] == user_id:
             user["profile_base64"] = profile_base64

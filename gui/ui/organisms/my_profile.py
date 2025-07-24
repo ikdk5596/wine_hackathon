@@ -43,7 +43,7 @@ class MyProfile(ctk.CTkFrame):
             
         userStore.add_observer("user_id", self._on_user_id_change)
         userStore.add_observer("profile_image", self._on_profile_image_change)
-
+        
     def upload_picture(self):
         file_path = filedialog.askopenfilename(filetypes=[("Image files", "*.png;*.jpg;*.jpeg")])
         if file_path:

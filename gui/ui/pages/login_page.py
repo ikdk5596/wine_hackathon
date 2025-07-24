@@ -61,15 +61,15 @@ class LoginPage(ctk.CTkFrame):
         user_id = self.id_input.get()
         password = self.pw_input.get()
 
-        # try:
-        result = UserController().login(user_id, password)
-        if result['status'] == 'success':
-            Toast(self.controller, result['message'], type="success", duration=2000)
-            self.controller.show_frame("MainPage")
-        else:
-            Toast(self.controller, "Login failed!", type="error", duration=2000)
-        # except Exception as e:
-        #     Toast(self.controller, f"Error: {str(e)}", type="error", duration=2000)
+        try:
+            result = UserController().login(user_id, password)
+            if result['status'] == 'success':
+                Toast(self.controller, result['message'], type="success", duration=2000)
+                self.controller.show_frame("MainPage")
+            else:
+              Toast(self.controller, "Login failed!", type="error", duration=2000)
+        except Exception as e:
+            Toast(self.controller, f"Error: {str(e)}", type="error", duration=2000)
 
     def _on_click_signup(self):
         self.pw_input.clear()
