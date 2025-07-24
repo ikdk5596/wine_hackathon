@@ -46,9 +46,6 @@ class DecryptImage(ctk.CTkFrame):
                     )
                 )
                 seed = seed.decode('utf-8')  # Ensure seed is a string
-                print(f"Decrypted seed: {seed}")
-                # decrypt the latent tensor
-                # print(self.message)
                 decrypted_latent = decrypt_latent(self.message['latent_tensor'], seed)
                 decoded_image = decode_latent_to_image(decrypted_latent)
                 self.latent_image_label.configure(image=ctk.CTkImage(dark_image=decoded_image, size=(256, 256)))

@@ -16,6 +16,7 @@ class UserStore(Observable):
             UserStore._initialized = True 
 
     def _init_state(self):
+        print("UserStore initialized")
         self._user_id = None
         self.password = None
         self.private_key = None
@@ -41,7 +42,7 @@ class UserStore(Observable):
             self.notify_observers("user_id")
 
     @profile_image.setter
-    def profile_image(self, value):   
+    def profile_image(self, value):
         if self._profile_image != value:
             self._profile_image = value
             self.notify_observers("profile_image")

@@ -2,7 +2,7 @@ import socket
 import threading
 import yaml
 import json
-from utils.ip import get_my_ip
+from utils.network import get_my_ip
 
 with open("config.yaml", "r") as file:
     config = yaml.safe_load(file)
@@ -29,7 +29,6 @@ class ServerSocket:
         self.port = port    
         self.callbacks = []
         self.start()
-        print(f"[ServerSocket] Initialized on {self.ip}:{self.port}")
 
     def add_callback(self, callback):
         if callable(callback):
@@ -44,11 +43,9 @@ class ServerSocket:
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             s.bind((self.ip, self.port))
             s.listen(5)
-            print(f"[ServerSocket] Listening on {self.ip}:{self.port}")
 
             while True:
                 conn, addr = s.accept()
-                print(f"[ServerSocket] Connection from {addr}")
                 with conn:
                     buffer = b""
                     while True:
