@@ -3,7 +3,7 @@ from PIL import Image, ImageDraw
 
 class ImageFrame(ctk.CTkLabel):
     def __init__(self, master, image: Image.Image, width=200, height=200, border_radius=20, **kwargs):
-        super().__init__(master, width=width, height=height, fg_color="transparent", **kwargs)
+        super().__init__(master, text="", **kwargs)
         self.width = width
         self.height = height
         self.border_radius = border_radius

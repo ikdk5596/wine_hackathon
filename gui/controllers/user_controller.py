@@ -28,9 +28,9 @@ class UserController:
 
     def login(self, user_id: str, password:str) -> dict:
         if not isinstance(user_id, str) or user_id == "":
-            raise ValueError("User ID and password must be strings")
+            raise ValueError("User ID must be strings")
         if not isinstance(password, str) or password == "":
-            raise ValueError("User ID and password must be strings")
+            raise ValueError("User password must be strings")
         
         response = user_api.authenticate_user(user_id, password)
 

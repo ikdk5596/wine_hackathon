@@ -37,6 +37,8 @@ class FriendMessage(ctk.CTkFrame):
                 height=128,
                 border_radius=5
             )
+            self.latent_image_frame.pack(anchor="w", padx=0, pady=0)
+            self.latent_image_frame.bind("<Button-1>", self._on_click_image)
 
         if message["text"]:
             msg_label = ctk.CTkLabel(
@@ -51,10 +53,7 @@ class FriendMessage(ctk.CTkFrame):
             msg_label.pack(anchor="w", padx=0, pady=0)
 
     def _on_click_image(self, event):
-        def show_decrypt_image(*args, **kwargs):
-            return DecryptImage(*args, message=self.message, **kwargs)
-
-        Modal(self, show_decrypt_image, height=500)
+        Modal(self, lambda *args, **kwargs: DecryptImage(*args, message=self.message, **kwargs))
 
 
 class MyMessage(ctk.CTkFrame):
@@ -71,6 +70,7 @@ class MyMessage(ctk.CTkFrame):
                 height=128,
                 border_radius=5
             )
+            self.latent_image_frame.pack(anchor="e", padx=0, pady=0)
             
         if message["text"]:
             msg_label = ctk.CTkLabel(

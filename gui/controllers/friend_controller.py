@@ -284,16 +284,24 @@ class FriendController:
                 "message": "User is not authenticated"
             }
         
-        friend = FriendsStore().get_friend(friend_id)
+        friendStore = FriendsStore()
+        friend = friendStore.get_friend(friend_id)
+        if not friend:
+            return {
+                "status": "error",
+                "message": "Friend not found"
+            }
+        
+        response = friend_api.read_messages(userStore.user_id, friend_id)
 
-        if friend:
+        if response.get("status") == "success":
             for message in friend.messages_list[::-1]:
                 if message["is_read"] is False:
                     message["is_read"] = True
                 else:
                     break
+            friend.messages_list = [*friend.messages_list]
             FriendsStore().selected_friend = friend
-
             return {
                 "status": "success",
                 "message": "Friend selected successfully",
@@ -301,8 +309,9 @@ class FriendController:
         else:
             return {
                 "status": "error",
-                "message": "Friend not found"
+                "message": response.get("message", "Failed to select friend")
             }
+
     
     def send_message(self, user_id: str, friend_id: str, text: str | None = '', image: Image.Image | None = None) -> dict:
         if not isinstance(user_id, str):

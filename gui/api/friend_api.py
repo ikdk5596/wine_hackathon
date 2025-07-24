@@ -135,3 +135,24 @@ def update_friend_profile(user_id:str, friend_id: str, profile_base64: str | Non
         "status": "error",
         "message": "Friend not found"
     }
+
+def read_messages(user_id: str, friend_id: str) -> dict:
+    friends = _load_friends()
+
+    for friend in friends:
+        if friend['user_id'] == user_id and friend['friend_id'] == friend_id:
+            for message in friend['messages_list'][::-1]:
+                if not message['is_read']:
+                    message['is_read'] = True
+                else:
+                    break
+            _save_friends(friends)
+            return {
+                "status": "success",
+                "message": "Messages marked as read",
+            }
+    
+    return {
+        "status": "error",
+        "message": "Friend not found"
+    }
