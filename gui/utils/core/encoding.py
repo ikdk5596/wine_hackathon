@@ -8,7 +8,7 @@ vqvae = VQModel.from_pretrained("CompVis/ldm-celebahq-256", subfolder="vqvae")
 torch_device = "cuda" if torch.cuda.is_available() else "cpu"
 vqvae.to(torch_device)
 
-def encode_image_to_latent(image: PIL.Image.Image) -> torch.Tensor:
+def encode_image_to_latent(image: Image.Image) -> torch.Tensor:
     # Preprocess the image
     if image.mode == 'RGBA':
         image = image.convert('RGB')
@@ -27,7 +27,7 @@ def encode_image_to_latent(image: PIL.Image.Image) -> torch.Tensor:
     return latent
 
 
-def decode_latent_to_image(latent: torch.Tensor) -> PIL.Image.Image:
+def decode_latent_to_image(latent: torch.Tensor) -> Image.Image:
     # Decode the latent representation to an image
     with torch.no_grad():
         recon = vqvae.decode(latent).sample
