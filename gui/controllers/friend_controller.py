@@ -235,7 +235,7 @@ class FriendController:
         
         response = friend_api.create_message(userStore.user_id, friend_id, friend_id, text,
                                              enc_latent_string, enc_seed_string, seed_string=None,
-                                             timestamp=timestamp, is_read=True)
+                                             timestamp=timestamp, is_read=False)
 
         if response.get("status") == "success":
             data = response.get("data")
@@ -383,12 +383,12 @@ class FriendController:
                 "type": "new_message",
                 "data": {
                     "sender_id": data["sender_id"],
-                    "text": response['text'],
-                    "enc_latent_tensor": response["enc_latent_string"],
-                    "enc_seed_string": response['enc_seed_string'],
+                    "text": data['text'],
+                    "enc_latent_tensor": data["enc_latent_string"],
+                    "enc_seed_string": data['enc_seed_string'],
                     "seed_string": None,
-                    "timestamp": response['timestamp'],
-                    "is_read": response['is_read']
+                    "timestamp": data['timestamp'],
+                    "is_read": data['is_read']
                 }
             })
 

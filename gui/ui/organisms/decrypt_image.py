@@ -2,8 +2,9 @@ import customtkinter as ctk
 from ui.atoms.toast import Toast
 from ui.atoms.button import Button
 from ui.atoms.input import Input
-from utils.core.encoding import visualize_latent, decode_latent_to_image
+from utils.core.encoding import decode_latent_to_image
 from utils.core.encryption import decrypt_latent
+from utils.image import latent_to_gray_image
 from controllers.friend_controller import FriendController
 from controllers.user_controller import UserController
 from states.user_store import UserStore
@@ -19,7 +20,7 @@ class DecryptImage(ctk.CTkFrame):
         self.grid_columnconfigure(0, weight=1)
         self.message = message
 
-        latent_image = visualize_latent(message["latent_tensor"])
+        latent_image = latent_to_gray_image(message["latent_tensor"])
         tk_image = ctk.CTkImage(dark_image=latent_image, size=(256, 256))
         self.latent_image_label = ctk.CTkLabel(self, image=tk_image, text="")
         self.latent_image_label.pack(pady=(20, 10))

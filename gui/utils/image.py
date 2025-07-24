@@ -2,6 +2,7 @@ import io
 import base64
 import torch
 from PIL import Image
+import numpy as np
 
 def path_to_base64(path) -> str:
     with open(path, "rb") as image_file:

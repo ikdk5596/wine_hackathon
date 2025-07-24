@@ -17,14 +17,14 @@ class FriendItem(ctk.CTkFrame):
         self.grid_rowconfigure(1, weight=1)
         self.grid_columnconfigure(1, weight=1)
         
-        self.profile = Profile(self, image=friend.profile_image, size=62)
+        self.profile = Profile(self, image=friend.profile_image, size=60)
         self.profile.grid(row=0, column=0, rowspan=2, padx=(10, 20), pady=(15, 15))
 
-        self.name_label = ctk.CTkLabel(self, text=friend.friend_id, font=("Helvetica", 13, "bold"), anchor="w")
-        self.name_label.grid(row=0, column=1, sticky="ws", pady=(8, 0))
+        self.name_label = ctk.CTkLabel(self, text=friend.friend_id, font=("Helvetica", 14, "bold"), anchor="w")
+        self.name_label.grid(row=0, column=1, sticky="ws", pady=(6, 0))
 
-        self.message_label = ctk.CTkLabel(self, text=friend.messages_list[-1]["text"] if friend.messages_list else "", font=("Helvetica", 13), anchor="w")
-        self.message_label.grid(row=1, column=1, sticky="nw")
+        self.message_label = ctk.CTkLabel(self, text=friend.messages_list[-1]["text"] if friend.messages_list else "", font=("Helvetica", 14), anchor="w")
+        self.message_label.grid(row=1, column=1, sticky="nw", pady=(0, 10))
 
         unread_count = 0
         for message in friend.messages_list[::-1]:
@@ -32,8 +32,10 @@ class FriendItem(ctk.CTkFrame):
                 unread_count += 1
             else:
                 break
-        self.unread_count_label = ctk.CTkLabel(self, text=str(unread_count) if unread_count > 0 else "", font=("Helvetica", 12), text_color="white", fg_color="#cf4f4a", corner_radius=10, width=20, height=20)
+        self.unread_count_label = ctk.CTkLabel(self, text=str(unread_count), font=("Helvetica", 12), text_color="white", fg_color="#cf4f4a", corner_radius=9, width=18, height=18)
         self.unread_count_label.grid(row=0, column=2, sticky="ne", padx=(0, 10), pady=(8, 0))
+        if unread_count == 0:
+            self.unread_count_label.grid_remove()
 
         self.bind("<Enter>", self._on_hover)
         self.bind("<Leave>", self._off_hover)
@@ -59,7 +61,7 @@ class FriendItem(ctk.CTkFrame):
         if self.friend.messages_list:
             last_message = self.friend.messages_list[-1]
             last_message = '사진' if not last_message["text"] else last_message
-            self.message_label.configure(text=last_message["text"])
+            self.message_label.configure(text=last_message)
 
             unread_count = 0
             for message in self.friend.messages_list[::-1]:
@@ -67,7 +69,10 @@ class FriendItem(ctk.CTkFrame):
                     unread_count += 1
                 else:
                     break
-            self.unread_count_label.configure(text=str(unread_count) if unread_count > 0 else "")
+            print(f"Unread count for {self.friend.friend_id}: {unread_count}")
+            self.unread_count_label.configure(text=str(unread_count))
+            if unread_count == 0:
+                self.unread_count_label.grid_remove()
         else:
             self.message_label.configure(text="")
 
