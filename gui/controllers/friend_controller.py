@@ -295,7 +295,7 @@ class FriendController:
                 "message": "Friend not found"
             }
     
-    def send_message(self, user_id: str, friend_id: str, text: str = '' | None, image: Image.Image | None = None) -> dict:
+    def send_message(self, user_id: str, friend_id: str, text: str | None = '', image: Image.Image | None = None) -> dict:
         if not isinstance(user_id, str):
             raise ValueError("User ID must be a string")
         if not isinstance(friend_id, str):
