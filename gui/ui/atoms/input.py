@@ -7,7 +7,11 @@ class Input(ctk.CTkEntry):
             placeholder_text=placeholder,
             height=40,
             corner_radius=10,
-            font=("Helvetica", 14),       # ✅ 글자 크기 설정
-            text_color="#333333",         # ✅ 전경색 (글자색) 설정
+            font=("Helvetica", 14),    
+            text_color="#333333",      
             **kwargs
         )
+
+    def clear(self):
+        """Clear the input field."""
+        self.delete(0, ctk.END)

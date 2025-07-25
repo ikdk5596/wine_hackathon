@@ -32,9 +32,10 @@ class App(ctk.CTk):
         from ui.pages.login_page import LoginPage
         from ui.pages.signup_page import SignupPage
         from ui.pages.main_page import MainPage
+        from ui.pages.chat_page import ChatPage
 
         self.frames = {}
-        for PageClass in (LoginPage, SignupPage, MainPage):
+        for PageClass in (LoginPage, SignupPage, MainPage, ChatPage):
             name = PageClass.__name__
             frame = PageClass(self.container, controller=self)
             frame.grid(row=0, column=0, sticky="nsew")
@@ -48,7 +49,6 @@ class App(ctk.CTk):
             raise ValueError(f"Page {page_class} not found in frames.")
         else:
             frame.tkraise()
-            frame.reset()
 
 if __name__ == "__main__":
     configure_ctk()

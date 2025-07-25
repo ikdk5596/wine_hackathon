@@ -1,28 +1,47 @@
 import customtkinter as ctk
+from ui.atoms.button import Button
 
 class Modal(ctk.CTkToplevel):
-    def __init__(self, master, child_widget_class, **child_kwargs):
-        super().__init__(master)
-        self.title("")
-        self.geometry("400x300")
+    def __init__(self, parent, child_widget_factory, margin=20, **kwargs):
+        super().__init__(parent)
+        self.withdraw()
         self.overrideredirect(True)
-        self.attributes("-topmost", True)
-        self.configure(bg="gray85")  # 테두리 그림자 효과
+        self.configure(fg_color="#FFFFFF")
 
-        # 중앙 정렬
-        self.update_idletasks()
-        x = master.winfo_rootx() + (master.winfo_width() // 2) - 200
-        y = master.winfo_rooty() + (master.winfo_height() // 2) - 150
+        # calculate position
+        parent.update_idletasks() 
+        root_x = parent.winfo_rootx()
+        root_y = parent.winfo_rooty()
+        root_w = parent.winfo_width()
+        
+        x = root_x + root_w + margin  
+        y = root_y 
+
         self.geometry(f"+{x}+{y}")
+        self.transient(parent)  
+        self.grab_set()         
 
-        # 내부 Frame
-        self.container = ctk.CTkFrame(self, corner_radius=12, fg_color="white")
-        self.container.pack(expand=True, fill="both", padx=2, pady=2)
+        self.modal_frame = ctk.CTkFrame(self)
+        self.modal_frame.configure(fg_color="#FFFFFF")
+        self.modal_frame.pack(padx=10, pady=10, fill="both", expand=True)
+        self.modal_frame.pack_propagate(True)
 
-        # 자식 위젯 삽입
-        self.child = child_widget_class(self.container, **child_kwargs)
-        self.child.pack(expand=True, fill="both", padx=20, pady=20)
+        self.modal_frame.grid_rowconfigure(0, weight=0)
+        self.modal_frame.grid_rowconfigure(1, weight=1)
+        self.modal_frame.grid_columnconfigure(0, weight=1)
 
-        # 닫기 버튼
-        close_button = ctk.CTkButton(self.container, text="Close", command=self.destroy, width=80)
-        close_button.pack(pady=(0, 10))
+        # close button
+        close_btn = Button(self.modal_frame, type="white", text="X", width=12, height=12, command=self.close_modal)
+        close_btn.grid(row=0, column=0, sticky="ne")
+
+        # content area
+        content = child_widget_factory(self.modal_frame, **kwargs)
+        content.grid(row=1, column=0, sticky="nsew")
+
+        # bind escape key to close modal
+        self.bind("<Escape>", lambda e: self.close_modal())
+
+        self.deiconify()
+
+    def close_modal(self):
+        self.destroy()
