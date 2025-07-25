@@ -28,7 +28,7 @@ def encode_image_to_latent(image: Image.Image) -> torch.Tensor:
 
     # Encode the image to latent representation
     with torch.no_grad():
-        latent = encoder(image_tensor).latents
+        _, _, latent, _  = encoder(image_tensor)
     
     return latent
 
