@@ -1,7 +1,15 @@
+import io
+import random
+import string
+import base64
+import numpy as np
+import time
 import customtkinter as ctk
 import tkinter.filedialog as fd
 from ui.atoms.button import Button
 from utils.image import path_to_image
+from utils.core.encoding import encode_image_to_latent
+from utils.core.encryption import encrypt_latent, encrypt_with_RSAKey
 from states.friends_store import FriendsStore
 from states.user_store import UserStore
 from controllers.friend_controller import FriendController
@@ -13,6 +21,7 @@ class ChatInput(ctk.CTkFrame):
         self.configure(fg_color="white", corner_radius=0)
         self.rowconfigure(0, weight=1)
         self.columnconfigure(0, weight=1)
+        self.is_encoding = False
 
         # Label
         label = ctk.CTkLabel(self, text="Chat Message", text_color="#7A7A8B")
@@ -36,21 +45,54 @@ class ChatInput(ctk.CTkFrame):
         path = fd.askopenfilename(filetypes=[("Image Files", "*.png *.jpg *.jpeg")])
         if path:
             self.selected_file = path
+
+            friend = FriendsStore().selected_friend
+
+            # encode
+            self.is_encoding = True
+            self.send_button.configure(text="Encoding...")
+            
+            image = path_to_image(self.selected_file)
+            latent_tensor = encode_image_to_latent(image)
+            
+            # encrypt latent
+            self.seed_string = ''.join(random.choices(string.ascii_letters + string.digits, k=16))
+            self.enc_latent_tensor = encrypt_latent(latent_tensor, self.seed_string)
+            
+            # encrypt_seed
+            enc_seed_bytes = encrypt_with_RSAKey(self.seed_string.encode('utf-8'), friend.public_key)
+            self.enc_seed_string = base64.b64encode(enc_seed_bytes).decode('utf-8')
+
+            self.is_encoding = False
             self.file_button.configure(text="File chosen")
         else:
             self.selected_file = None
+            self.enc_latent_tensor = None
+            self.enc_seed_string = None
+            self.seed_string = None
             self.file_button.configure(text="Choose file")
 
     def send_message(self):
         text = self.textbox.get("0.0", "end").strip()
-        image = path_to_image(self.selected_file) if self.selected_file else None
-        FriendController().send_message(
-            UserStore().user_id,
-            FriendsStore().selected_friend.friend_id,
-            text,
-            image
-        )
+        if text:
+            FriendController().send_text_message(
+                UserStore().user_id,
+                FriendsStore().selected_friend.friend_id,
+                text
+            )
 
-        self.textbox.delete("0.0", "end")
-        self.selected_file = None
-        self.file_button.configure(text="Choose file")
+        if self.selected_file:
+            while self.is_encoding:
+                image = path_to_image(self.selected_file) if self.selected_file else None
+                FriendController().send_message(
+                    UserStore().user_id,
+                    FriendsStore().selected_friend.friend_id,
+                    self.enc_latent_tensor,
+                    self.enc_seed_string,
+                    self.seed_string,
+                )
+
+                self.textbox.delete("0.0", "end")
+                self.selected_file = None
+                self.file_button.configure(text="Choose file")
+                time.sleep(0.1)  # Prevents UI freezing during encoding

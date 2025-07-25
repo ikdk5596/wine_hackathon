@@ -48,6 +48,7 @@ class DecryptImage(ctk.CTkFrame):
             # authentication
             seed_string = 'wrong-seed'
             result = UserController().login(UserStore().user_id, self.entry.get())
+
             if result['status'] == 'success':
                 # decrypt seed
                 enc_seed_bytes = self.message["enc_seed_bytes"]
@@ -67,8 +68,6 @@ class DecryptImage(ctk.CTkFrame):
         except Exception as e:
             Toast(self, f"Authentication failed: {str(e)}", type="error", duration=2000)
             return
-        
-        self.entry.clear()
 
     def save_image(self):
         try:

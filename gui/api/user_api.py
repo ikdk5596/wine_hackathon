@@ -4,7 +4,7 @@ import hashlib
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives import serialization
 
-USER_DB_PATH = "users.json"
+USER_DB_PATH = "db/users.json"
 
 # internal functions
 def _create_key_pair() -> tuple:
