@@ -135,7 +135,7 @@ def run_inference(device, size, input_image):
     enc_infer_job = hub.submit_inference_job(
         enc_model_path,
         device,
-        {"x": input_list}
+        {"image": input_list}
     )
     
     enc_infer_job.wait()
@@ -158,7 +158,7 @@ def run_inference(device, size, input_image):
     dec_infer_job = hub.submit_inference_job(
         dec_model_path,
         device,
-        {"x": latent_list}
+        {"latent": latent_list}
     )
     
     dec_infer_job.wait()
