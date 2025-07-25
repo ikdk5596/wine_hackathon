@@ -42,3 +42,4 @@ def decrypt_with_RSAKey(encrypted_data: bytes, private_key: RSAPrivateKey) -> by
             label=None
         )
     )
+    return decrypted_data
