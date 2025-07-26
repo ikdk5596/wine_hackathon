@@ -145,13 +145,12 @@ class FriendController:
                             "timestamp": message['timestamp'],
                             "is_read": message['is_read']
                         })
-                        continue
-                    enc_latent_tensor = torch.tensor(message["enc_latent_numpy"])          
+                        continue     
                     enc_seed_bytes = base64.b64decode(message["enc_seed_string"].encode('utf-8'))
                     messages_list.append({
                         "sender_id": message['sender_id'],
                         "enc_latent_size": message['enc_latent_size'],
-                        "enc_latent_tensor": enc_latent_tensor,
+                        "enc_latent_tensor": message['enc_latent_tensor'],
                         "enc_seed_bytes": enc_seed_bytes,
                         "seed_string": message['seed_string'],
                         "timestamp": message['timestamp'],
@@ -278,7 +277,7 @@ class FriendController:
             }
         
         is_read = friendStore.selected_friend and friendStore.selected_friend.friend_id == friend_id
-        response = friend_api.create_latent_message(userStore.user_id, friend_id, userStore.user_id, enc_latent_size,
+        response = friend_api.create_latent_message(userStore.user_id, friend_id, friend_id, enc_latent_size,
                                                 enc_latent_tensor, enc_seed_string, seed_string,
                                                 timestamp=timestamp, is_read=is_read)
 
