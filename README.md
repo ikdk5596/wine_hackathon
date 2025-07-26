@@ -16,7 +16,7 @@
 이승주 joon8958@gmail.com  
 김건우 bbosam2004@gmail.com  
 
-# Dependency
+# Dependencies
 python>=3.11  
 torch==2.6.0  
 numpy  
