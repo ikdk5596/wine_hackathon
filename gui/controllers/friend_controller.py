@@ -261,7 +261,7 @@ class FriendController:
                 "message": response.get("message", "Failed to send message")
             }
 
-    def receive_latent_message(self, friend_id: str,  enc_latent_size: int, enc_latent_bytes: bytes, enc_seed_string: str, seed_string: str, timestamp: float) -> None:
+    def receive_latent_message(self, friend_id: str,  enc_latent_size: int, enc_latent_tensor: torch.Tensor, enc_seed_string: str, seed_string: str, timestamp: float) -> None:
         userStore = UserStore()
         if not userStore.is_authenticated:
             return {
@@ -277,20 +277,16 @@ class FriendController:
                 "message": "Friend not found"
             }
         
-        # Deserialize
-        enc_latent_numpy = np.load(io.BytesIO(enc_latent_bytes))['latent']
-        enc_latent_tensor = torch.tensor(enc_latent_numpy)
-        enc_seed_bytes = base64.b64decode(enc_seed_string.encode('utf-8'))
-        
         is_read = friendStore.selected_friend and friendStore.selected_friend.friend_id == friend_id
         response = friend_api.create_latent_message(userStore.user_id, friend_id, userStore.user_id, enc_latent_size,
-                                                enc_latent_numpy, enc_seed_string, seed_string,
+                                                enc_latent_tensor, enc_seed_string, seed_string,
                                                 timestamp=timestamp, is_read=is_read)
 
         if response.get("status") == "success":
             data = response.get("data")
 
             # Update FriendsStore
+            enc_seed_bytes = base64.b64decode(enc_seed_string.encode('utf-8'))
             message = {
                 "sender_id": data['sender_id'],
                 "enc_latent_tensor": enc_latent_tensor,
@@ -441,14 +437,13 @@ class FriendController:
         
         # Serialize
         buffer = io.BytesIO()
-        arr = enc_latent_tensor.detach().cpu().numpy()
-        np.savez_compressed(buffer, latent=arr)
-        enc_latent_numpy = buffer.getvalue()
-        enc_latent_size = len(enc_latent_numpy)
+        torch.save(enc_latent_tensor, buffer)
+        enc_latent_bytes = buffer.getvalue()
+        enc_latent_size = len(enc_latent_bytes)
 
         enc_seed_string = base64.b64encode(enc_seed_bytes).decode('utf-8')
 
-        response = friend_api.create_latent_message(user_id, friend_id, user_id, enc_latent_size, enc_latent_numpy, enc_seed_string, seed_string, is_read=True)
+        response = friend_api.create_latent_message(user_id, friend_id, user_id, enc_latent_size, enc_latent_tensor, enc_seed_string, seed_string, is_read=True)
 
         if response.get("status") == "success":
             data = response.get("data")
@@ -479,7 +474,7 @@ class FriendController:
                     "seed_string": None,
                     "timestamp": data['timestamp'],
                 }
-            }, binary_bytes=enc_latent_numpy, binary_type="npz")
+            }, binary_bytes=enc_latent_bytes, binary_type="pt")
 
             return {
                 "status": response.get("status", "success"),
@@ -606,8 +601,8 @@ class FriendController:
         elif type == "latent_message":
             sender_id = data["sender_id"]
             enc_latent_size = data["enc_latent_size"]
-            enc_latent_bytes = binary_bytes
+            enc_latent_tensor = torch.load(io.BytesIO(binary_bytes)) if binary_bytes else None
             enc_seed_string = data["enc_seed_string"]
             seed_string = data.get("seed_string", None)
             timestamp = data["timestamp"]
-            self.receive_latent_message(sender_id, enc_latent_size, enc_latent_bytes, enc_seed_string, seed_string, timestamp)
+            self.receive_latent_message(sender_id, enc_latent_size, enc_latent_tensor, enc_seed_string, seed_string, timestamp)
