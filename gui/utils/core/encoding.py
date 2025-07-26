@@ -1,12 +1,18 @@
 import torch
 import numpy as np
 from PIL import Image
-from diffusers import VQModel
 import torchvision.transforms as transforms
+from utils.core.Encoder import Encoder
+from utils.core.Decoder import Decoder
 
-vqvae = VQModel.from_pretrained("CompVis/ldm-celebahq-256", subfolder="vqvae")
+# Load Encoder and Decoder
 torch_device = "cuda" if torch.cuda.is_available() else "cpu"
-vqvae.to(torch_device)
+
+encoder = Encoder()
+encoder.to(torch_device)
+
+decoder = Decoder()
+decoder.to(torch_device)
 
 def encode_image_to_latent(image: Image.Image) -> torch.Tensor:
     # Preprocess the image
@@ -14,7 +20,7 @@ def encode_image_to_latent(image: Image.Image) -> torch.Tensor:
         image = image.convert('RGB')
         
     transform = transforms.Compose([
-        transforms.Resize((256, 256)),
+        transforms.Resize((image.width, image.width)),  # Resize to square
         transforms.ToTensor(),
         transforms.Normalize([0.5] * 3, [0.5] * 3)
     ])
@@ -22,7 +28,7 @@ def encode_image_to_latent(image: Image.Image) -> torch.Tensor:
 
     # Encode the image to latent representation
     with torch.no_grad():
-        latent = vqvae.encode(image_tensor).latents\
+        _, _, latent, _  = encoder(image_tensor)
     
     return latent
 
@@ -30,10 +36,10 @@ def encode_image_to_latent(image: Image.Image) -> torch.Tensor:
 def decode_latent_to_image(latent: torch.Tensor) -> Image.Image:
     # Decode the latent representation to an image
     with torch.no_grad():
-        recon = vqvae.decode(latent).sample
+        decoded = decoder(latent)
 
     # Convert the tensor to a PIL image
-    image_np = recon.cpu().squeeze(0).permute(1, 2, 0).numpy()
+    image_np = decoded.cpu().squeeze(0).permute(1, 2, 0).numpy()
     image_np = ((image_np + 1.0) / 2.0 * 255).clip(0, 255).astype(np.uint8)
 
     # Convert the numpy array to a PIL image
