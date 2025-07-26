@@ -3,7 +3,7 @@ from ui.pages.login_page import LoginPage
 
 APP_TITLE = "EncTalk"
 WINDOW_SIZE = "502x874"
-MIN_WINDOW_SIZE = (402, 874)
+MIN_WINDOW_SIZE = (402, 674)
 THEME = "blue"
 MODE = "system"
 

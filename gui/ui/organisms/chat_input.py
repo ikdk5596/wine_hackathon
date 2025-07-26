@@ -82,6 +82,7 @@ class ChatInput(ctk.CTkFrame):
                 FriendsStore().selected_friend.friend_id,
                 text
             )
+            self.textbox.delete("0.0", "end")
 
         if self.selected_file and not self.is_encoding:
             FriendController().send_latent_message(
