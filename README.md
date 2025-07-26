@@ -73,7 +73,7 @@ Python 3.11 이상과 pip 23.0 이상이 필요합니다. 추가 라이브러리
    ```bash
     python main.py
    ```
-5. **사용법은 [사용 영상](https://youtu.be/7b1k2Z5g0a4)에서 확인할 수 있습니다.**
+5. **사용법은 [사용 영상](https://youtu.be/6IaboUmv0tE)에서 확인할 수 있습니다.**
 
 ### CLI 프로그램
 CLI(Command Line Interface) 프로그램으로, 이미지 파일을 암호화하고 복호화하는 기능을 제공합니다. 응용 프로그램의 핵심 로직을 구현하며, 이미지 파일을 암호화된 latent vector로 변환하고 이를 복호화할 수 있습니다.
