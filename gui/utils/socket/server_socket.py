@@ -1,7 +1,9 @@
 import socket
+import struct
 import threading
 import yaml
 import json
+import numpy as np
 from utils.network import get_my_ip
 
 with open("config.yaml", "r") as file:
@@ -39,30 +41,73 @@ class ServerSocket:
     def start(self):
         threading.Thread(target=self._run, daemon=True).start()
 
+    def _recv_exact(self, conn, n):
+        buf = b""
+        while len(buf) < n:
+            chunk = conn.recv(n - len(buf))
+            if not chunk:
+                raise ConnectionError("Connection closed prematurely")
+            buf += chunk
+        return buf
+
     def _run(self):
+        # with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        #     s.bind((self.ip, self.port))
+        #     s.listen(5)
+
+        #     while True:
+        #         conn, addr = s.accept()
+        #         print(f"[ServerSocket] Connection from {addr}")
+        #         with conn:
+        #             buffer = b""
+        #             while True:
+        #                 chunk = conn.recv(1024)
+        #                 if not chunk:
+        #                     break
+        #                 buffer += chunk
+        #                 if b"\n" in buffer:
+        #                     break  # 메시지 완성
+
+        #             try:
+        #                 raw_msg = buffer.decode("utf-8").strip()
+        #                 parsed_json = json.loads(raw_msg)
+        #                 for callback in self.callbacks:
+        #                     callback(parsed_json)
+        #             except Exception as e:
+        #                 print(f"[ServerSocket] Error: {e}")
+
+        #             conn.sendall(b"Data received")
+
+        #             def start_server(host="0.0.0.0", port=9999):
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             s.bind((self.ip, self.port))
-            s.listen(5)
+            s.listen()
+            print(f"[Server] Listening on {self.ip}:{self.port}")
 
             while True:
                 conn, addr = s.accept()
-                print(f"[ServerSocket] Connection from {addr}")
                 with conn:
-                    buffer = b""
-                    while True:
-                        chunk = conn.recv(1024)
-                        if not chunk:
-                            break
-                        buffer += chunk
-                        if b"\n" in buffer:
-                            break  # 메시지 완성
+                    print(f"[Server] Connection from {addr}")
 
-                    try:
-                        raw_msg = buffer.decode("utf-8").strip()
-                        parsed_json = json.loads(raw_msg)
-                        for callback in self.callbacks:
-                            callback(parsed_json)
-                    except Exception as e:
-                        print(f"[ServerSocket] Error: {e}")
+                    # 1. JSON 길이 수신
+                    header = self._recv_exact(conn, 4)
+                    json_len = struct.unpack("!I", header)[0]
 
-                    conn.sendall(b"Data received")
+                    # 2. JSON 본문 수신
+                    json_data = self._recv_exact(conn, json_len)
+                    json_dict = json.loads(json_data.decode("utf-8"))
+                    print("[Server] json_data :", json_dict)
+
+                    # 3. Binary 데이터 수신 (옵션)
+                    binary_data = None
+                    binary_type = None
+                    if json_dict.get("has_binary"):
+                        binary_data = self._recv_exact(conn, json_dict["binary_length"])
+                        binary_type = json_dict["binary_type"]
+                        print(f"[Server] Received binary ({binary_type}, {len(binary_data)} bytes)")
+
+                    for callback in self.callbacks:
+                        callback(json_dict, binary_data, binary_type)
+
+                    # 4. 응답
+                    conn.sendall(b"OK")

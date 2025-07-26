@@ -28,7 +28,7 @@ class FriendMessage(ctk.CTkFrame):
         message_frame = ctk.CTkFrame(self, fg_color="transparent")
         message_frame.grid(row=1 if show_profile else 0, column=1, sticky="w", padx=(0, 2) if show_profile else (74, 2), pady=(5, 0))
 
-        if message["enc_latent_tensor"] is not None:
+        if 'enc_latent_tensor' in message and message['enc_latent_tensor'] is not None:
             latent_image = latent_to_gray_image(message["enc_latent_tensor"])
             self.latent_image_frame = ImageFrame(
                 master=message_frame,
@@ -40,7 +40,7 @@ class FriendMessage(ctk.CTkFrame):
             self.latent_image_frame.pack(anchor="w", padx=0, pady=0)
             self.latent_image_frame.bind("<Button-1>", self._on_click_image)
 
-        if message["text"]:
+        elif 'text' in message and message['text']:
             msg_label = ctk.CTkLabel(
                 message_frame,
                 text=message["text"],
@@ -59,7 +59,7 @@ class FriendMessage(ctk.CTkFrame):
 class MyMessage(ctk.CTkFrame):
     def __init__(self, master, message):
         super().__init__(master, fg_color="transparent")
-        if message["enc_latent_tensor"] is not None:
+        if 'enc_latent_tensor' in message and message['enc_latent_tensor'] is not None:
             latent_tensor = decrypt_latent(message["enc_latent_tensor"], message["seed_string"])
             latent_image = decode_latent_to_image(latent_tensor)
             self.latent_image_frame = ImageFrame(
@@ -71,7 +71,7 @@ class MyMessage(ctk.CTkFrame):
             )
             self.latent_image_frame.pack(anchor="e", padx=0, pady=0)
             
-        if message["text"]:
+        elif 'text' in message and message['text']:
             msg_label = ctk.CTkLabel(
                 self,
                 text=message["text"],

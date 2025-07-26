@@ -137,11 +137,11 @@ class UserController:
                 "message": response.get("message", "Profile update failed")
             }
         
-    def _handle_socket_response(self, response):
+    def _handle_socket_response(self, json_data: dict, binary_bytes: bytes | None = None, binary_type: str | None = None):
         userStore = UserStore()
 
-        type = response.get("type")
-        data = response.get("data")
+        type = json_data.get("type")
+        data = json_data.get("data")
 
         if type == "profile_update":
             user_id =  userStore.user_id

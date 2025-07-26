@@ -24,7 +24,7 @@ class FriendItem(ctk.CTkFrame):
         self.name_label.grid(row=0, column=1, sticky="ws", pady=(6, 0))
 
         last_message = friend.messages_list[-1] if friend.messages_list else None
-        last_message = '사진' if not last_message or not last_message["text"] else last_message['text']
+        last_message = '' if not last_message else '사진' if 'text' not in last_message else last_message['text']
         self.message_label = ctk.CTkLabel(self, text=last_message, font=("Helvetica", 14), anchor="w")
         self.message_label.grid(row=1, column=1, sticky="nw", pady=(0, 10))
 
@@ -62,7 +62,7 @@ class FriendItem(ctk.CTkFrame):
     def _on_messages_list_change(self):
         if self.friend.messages_list:
             last_message = self.friend.messages_list[-1]
-            last_message = '사진' if not last_message["text"] else last_message['text']
+            last_message = '' if not last_message else '사진' if 'text' not in last_message else last_message['text']
             self.message_label.configure(text=last_message)
 
             unread_count = 0
