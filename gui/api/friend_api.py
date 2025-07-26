@@ -20,8 +20,9 @@ def _save_friends(friends: list):
         json.dump(friends, f, indent=2)
 
 def _get_latent_path(user_id: str, friend_id: str, enc_seed_string: str) -> str:
-    save_dir = f"{LATENTS_DB_PATH}{user_id}/{friend_id}"
+    save_dir = os.path.join(LATENTS_DB_PATH, user_id, friend_id)
     os.makedirs(save_dir, exist_ok=True)
+
     filename = f"{enc_seed_string[:10]}.npz"
     full_path = os.path.join(save_dir, filename)
     
