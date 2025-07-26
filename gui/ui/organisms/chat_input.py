@@ -50,7 +50,8 @@ class ChatInput(ctk.CTkFrame):
 
             # encode
             self.is_encoding = True
-            self.send_button.configure(text="Encoding...")
+            self.file_button.configure(text="Encoding...")
+            self.send_button.configure(state='disabled')
             
             image = path_to_image(self.selected_file)
             latent_tensor = encode_image_to_latent(image)
@@ -60,17 +61,18 @@ class ChatInput(ctk.CTkFrame):
             self.enc_latent_tensor = encrypt_latent(latent_tensor, self.seed_string)
             
             # encrypt_seed
-            enc_seed_bytes = encrypt_with_RSAKey(self.seed_string.encode('utf-8'), friend.public_key)
-            self.enc_seed_string = base64.b64encode(enc_seed_bytes).decode('utf-8')
+            self.enc_seed_bytes = encrypt_with_RSAKey(self.seed_string.encode('utf-8'), friend.public_key)
 
             self.is_encoding = False
             self.file_button.configure(text="File chosen")
+            self.send_button.configure(state='normal')
         else:
             self.selected_file = None
             self.enc_latent_tensor = None
             self.enc_seed_string = None
             self.seed_string = None
             self.file_button.configure(text="Choose file")
+            self.send_button.configure(state='normal')
 
     def send_message(self):
         text = self.textbox.get("0.0", "end").strip()
@@ -81,17 +83,15 @@ class ChatInput(ctk.CTkFrame):
                 text
             )
 
-        if self.selected_file:
-            while self.is_encoding:
-                FriendController().send_latent_message(
-                    UserStore().user_id,
-                    FriendsStore().selected_friend.friend_id,
-                    self.enc_latent_tensor,
-                    self.enc_seed_string,
-                    self.seed_string,
-                )
+        if self.selected_file and not self.is_encoding:
+            FriendController().send_latent_message(
+                UserStore().user_id,
+                FriendsStore().selected_friend.friend_id,
+                self.enc_latent_tensor,
+                self.enc_seed_bytes,
+                self.seed_string,
+            )
 
-                self.textbox.delete("0.0", "end")
-                self.selected_file = None
-                self.file_button.configure(text="Choose file")
-                time.sleep(0.1)  # Prevents UI freezing during encoding
+            self.textbox.delete("0.0", "end")
+            self.selected_file = None
+            self.file_button.configure(text="Choose file")

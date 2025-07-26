@@ -419,7 +419,7 @@ class FriendController:
             raise ValueError("Friend ID must be a string")
         if not isinstance(enc_latent_tensor, torch.Tensor):
             raise ValueError("Encoded latent tensor must be a torch.Tensor")
-        if not isinstance(enc_seed_string, str):
+        if not isinstance(enc_seed_bytes, bytes):
             raise ValueError("Encrypted seed string must be a string")
         if not isinstance(seed_string, str):
             raise ValueError("Seed string must be a string")
@@ -448,7 +448,7 @@ class FriendController:
 
         enc_seed_string = base64.b64encode(enc_seed_bytes).decode('utf-8')
 
-        response = friend_api.create_message(user_id, friend_id, user_id, enc_latent_size, enc_seed_string, seed_string, is_read=True)
+        response = friend_api.create_latent_message(user_id, friend_id, user_id, enc_latent_size, enc_latent_numpy, enc_seed_string, seed_string, is_read=True)
 
         if response.get("status") == "success":
             data = response.get("data")
@@ -600,10 +600,8 @@ class FriendController:
         elif type == "text_message":
             sender_id = data["sender_id"]
             text = data["text"]
-            enc_latent_string = data.get("enc_latent_tensor", None)
-            enc_seed_string = data.get("enc_seed_string", None)
             timestamp = data["timestamp"]
-            self.receive_text_message(sender_id, text, enc_latent_string, enc_seed_string, timestamp)
+            self.receive_text_message(sender_id, text, timestamp)
 
         elif type == "latent_message":
             sender_id = data["sender_id"]

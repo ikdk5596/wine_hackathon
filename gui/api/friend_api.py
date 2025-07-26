@@ -110,7 +110,7 @@ def create_latent_message(user_id: str, friend_id: str, sender_id: str, enc_late
             message = {
                 "sender_id": sender_id,
                 "enc_latent_size": enc_latent_size,
-                "enc_latent_numpy": enc_latent_numpy,
+                "enc_latent_path": enc_latent_path,
                 "enc_seed_string": enc_seed_string,
                 "seed_string": seed_string,
                 "timestamp" : timestamp,
@@ -126,7 +126,7 @@ def create_latent_message(user_id: str, friend_id: str, sender_id: str, enc_late
                 "data": {
                     "sender_id": sender_id,
                     "enc_latent_size": enc_latent_size,
-                    "enc_latent_path": enc_latent_path,
+                    "enc_latent_numpy": enc_latent_numpy,
                     "enc_seed_string": enc_seed_string,
                     "seed_string": seed_string,
                     "timestamp" : timestamp,
@@ -157,8 +157,8 @@ def get_friends(user_id: str) -> dict:
 
     for friend in user_friends:
         for message in friend['messages_list']:
-            if 'enc_latent_numpy' in message:
-                enc_latent_path = _get_latent_path(user_id, friend['friend_id'], message['enc_seed_string'])[1]
+            if 'enc_latent_path' in message:
+                enc_latent_path = message['enc_latent_path']
                 if os.path.exists(enc_latent_path):
                     message['enc_latent_numpy'] = np.load(enc_latent_path)['tensor']
                 else:
