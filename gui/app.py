@@ -2,8 +2,8 @@ import customtkinter as ctk
 from ui.pages.login_page import LoginPage
 
 APP_TITLE = "EncTalk"
-WINDOW_SIZE = "502x874"
-MIN_WINDOW_SIZE = (402, 874)
+WINDOW_SIZE = "302x302"
+MIN_WINDOW_SIZE = (352, 352)
 THEME = "blue"
 MODE = "system"
 
@@ -29,19 +29,16 @@ class App(ctk.CTk):
         self.container.grid_rowconfigure(0, weight=1)
         self.container.grid_columnconfigure(0, weight=1)
 
-        from ui.pages.login_page import LoginPage
-        from ui.pages.signup_page import SignupPage
-        from ui.pages.main_page import MainPage
-        from ui.pages.chat_page import ChatPage
+        from ui.pages.viewer_page import ViewerPage
 
         self.frames = {}
-        for PageClass in (LoginPage, SignupPage, MainPage, ChatPage):
+        for PageClass in (ViewerPage,):
             name = PageClass.__name__
             frame = PageClass(self.container, controller=self)
             frame.grid(row=0, column=0, sticky="nsew")
             self.frames[name] = frame
 
-        self.show_frame("LoginPage")
+        self.show_frame("ViewerPage")
 
     def show_frame(self, page_class):
         frame = self.frames.get(page_class)
