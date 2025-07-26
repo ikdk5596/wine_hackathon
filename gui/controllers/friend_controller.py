@@ -218,7 +218,7 @@ class FriendController:
             "message": "Friend request sent successfully"
         }
     
-    def receive_message(self, friend_id: str, text: str, enc_latent_string: str | None, enc_seed_string: str | None, timestamp: float) -> None:
+    def receive_text_message(self, friend_id: str, text: str, timestamp: float) -> None:
         userStore = UserStore()
         if not userStore.is_authenticated:
             return {
@@ -235,30 +235,69 @@ class FriendController:
             }
         
         is_read = friendStore.selected_friend and friendStore.selected_friend.friend_id == friend_id
-        response = friend_api.create_message(userStore.user_id, friend_id, friend_id, text,
-                                             enc_latent_string, enc_seed_string, seed_string=None,
+        response = friend_api.create_text_message(userStore.user_id, friend_id, friend_id, text,
                                              timestamp=timestamp, is_read=is_read)
 
         if response.get("status") == "success":
             data = response.get("data")
-
-            # Deserialize
-            enc_latent_tensor = None
-            enc_seed_bytes = None
-            if data.get("enc_latent_string"):
-                buffer = io.BytesIO(base64.b64decode(data["enc_latent_string"]))
-                npz_file = np.load(buffer)
-                enc_latent_tensor = torch.tensor(npz_file['latent'])
-            if data.get("enc_seed_string"):
-                enc_seed_bytes = base64.b64decode(data["enc_seed_string"].encode('utf-8'))
 
             # Update FriendsStore
             message = {
                 "sender_id": data['sender_id'],
                 "text": data['text'],
                 "timestamp": data['timestamp'],
+                "is_read": data['is_read']
+            }
+            friend.messages_list = [*friend.messages_list, message]
+            
+            return {
+                "status": response.get("status", "success"),
+                "message": response.get("message", "Message sent successfully"),
+            }
+        
+        else:
+            return {
+                "status": response.get("status", "error"),
+                "message": response.get("message", "Failed to send message")
+            }
+
+    def receive_latent_message(self, friend_id: str,  enc_latent_size: int, enc_latent_bytes: bytes, enc_seed_string: str, seed_string: str, timestamp: float) -> None:
+        userStore = UserStore()
+        if not userStore.is_authenticated:
+            return {
+                "status": "error",
+                "message": "User is not authenticated"
+            }
+        
+        friendStore = FriendsStore()
+        friend = friendStore.get_friend(friend_id)
+        if not friend:
+            return {
+                "status": "error",
+                "message": "Friend not found"
+            }
+        
+        # Deserialize
+        enc_latent_numpy = np.load(io.BytesIO(enc_latent_bytes))['latent']
+        enc_latent_tensor = torch.tensor(enc_latent_numpy)
+        enc_seed_bytes = base64.b64decode(enc_seed_string.encode('utf-8'))
+        
+        is_read = friendStore.selected_friend and friendStore.selected_friend.friend_id == friend_id
+        response = friend_api.create_latent_message(userStore.user_id, friend_id, userStore.user_id, enc_latent_size,
+                                                enc_latent_numpy, enc_seed_string, seed_string,
+                                                timestamp=timestamp, is_read=is_read)
+
+        if response.get("status") == "success":
+            data = response.get("data")
+
+            # Update FriendsStore
+            message = {
+                "sender_id": data['sender_id'],
                 "enc_latent_tensor": enc_latent_tensor,
+                "enc_latent_size": data['enc_latent_size'],
                 "enc_seed_bytes": enc_seed_bytes,
+                "seed_string": data['seed_string'],
+                "timestamp": data['timestamp'],
                 "is_read": data['is_read']
             }
             friend.messages_list = [*friend.messages_list, message]
@@ -354,12 +393,11 @@ class FriendController:
             # Propagation event
             socket = ClientSocket(friend.ip, friend.port)
             socket.send({
-                "type": "new_message",
+                "type": "text_message",
                 "data": {
                     "sender_id": data["sender_id"],
                     "text": data['text'],
                     "timestamp": data['timestamp'],
-                    "is_read": data['is_read']
                 }
             })
 
@@ -416,10 +454,11 @@ class FriendController:
             data = response.get("data")
 
             # Skip deserialization and use previously encoded values
+
             message = {
                 "sender_id": data['sender_id'],
-                "text": data['text'],
                 "enc_latent_tensor": enc_latent_tensor,
+                "enc_latent_size": enc_latent_size,
                 "enc_seed_bytes": enc_seed_bytes,
                 "seed_string": data['seed_string'],
                 "timestamp": data['timestamp'],
@@ -430,21 +469,17 @@ class FriendController:
             friend.messages_list = [*friend.messages_list, message]
 
             # Propagation event
-            metadata = {
-                "type": "new_message",
-                "sender_id": data["sender_id"],
-                "text": data['text'],
-                "enc_seed_string": data['enc_seed_string'],
-                "seed_string": None,
-                "timestamp": data['timestamp'],
-                "is_read": data['is_read']
-            }
-            meta_json = json.dumps(metadata).encode('utf-8')
-            meta_len = len(meta_json)
-
-            socket_message = struct.pack('!I', meta_len) + meta_json + enc_latent_numpy
             socket = ClientSocket(friend.ip, friend.port)
-            socket.send(socket_message)
+            socket.send({
+                "type": "latent_message",
+                "data": {
+                    "sender_id": data["sender_id"],
+                    "enc_latent_size": enc_latent_size,
+                    "enc_seed_string": enc_seed_string,
+                    "seed_string": None,
+                    "timestamp": data['timestamp'],
+                }
+            }, binary_bytes=enc_latent_numpy, binary_type="npz")
 
             return {
                 "status": response.get("status", "success"),
@@ -509,11 +544,15 @@ class FriendController:
                 "message": response.get("message", "Failed to update friend profile")
             }
     
-    def _handle_socket_response(self, response):
-        type = response.get("type")
-        data = response.get("data")
+    def _handle_socket_response(self, json_dict: dict, binary_bytes: bytes | None = None, binary_type: str | None = None):
+        type = json_dict.get("type")
+        data = json_dict.get("data")
 
         userStore = UserStore()
+
+        print(f"[FriendController] Received socket response: {json_dict}"
+              f"{' with binary data' if binary_bytes else ''}"
+                f"{' of type ' + binary_type if binary_type else ''}")
 
         if type == "request_friend":
             # Accept friend request
@@ -558,10 +597,19 @@ class FriendController:
                 profile_image=profile_image
             )
     
-        elif type == "new_message":
+        elif type == "text_message":
             sender_id = data["sender_id"]
             text = data["text"]
             enc_latent_string = data.get("enc_latent_tensor", None)
             enc_seed_string = data.get("enc_seed_string", None)
             timestamp = data["timestamp"]
-            self.receive_message(sender_id, text, enc_latent_string, enc_seed_string, timestamp)
+            self.receive_text_message(sender_id, text, enc_latent_string, enc_seed_string, timestamp)
+
+        elif type == "latent_message":
+            sender_id = data["sender_id"]
+            enc_latent_size = data["enc_latent_size"]
+            enc_latent_bytes = binary_bytes
+            enc_seed_string = data["enc_seed_string"]
+            seed_string = data.get("seed_string", None)
+            timestamp = data["timestamp"]
+            self.receive_latent_message(sender_id, enc_latent_size, enc_latent_bytes, enc_seed_string, seed_string, timestamp)
