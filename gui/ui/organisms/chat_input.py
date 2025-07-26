@@ -83,8 +83,7 @@ class ChatInput(ctk.CTkFrame):
 
         if self.selected_file:
             while self.is_encoding:
-                image = path_to_image(self.selected_file) if self.selected_file else None
-                FriendController().send_message(
+                FriendController().send_latent_message(
                     UserStore().user_id,
                     FriendsStore().selected_friend.friend_id,
                     self.enc_latent_tensor,

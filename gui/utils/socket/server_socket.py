@@ -41,7 +41,7 @@ class ServerSocket:
     def start(self):
         threading.Thread(target=self._run, daemon=True).start()
 
-    def _recv_exact(conn, n):
+    def _recv_exact(self, conn, n):
         buf = b""
         while len(buf) < n:
             chunk = conn.recv(n - len(buf))
