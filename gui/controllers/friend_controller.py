@@ -1,7 +1,7 @@
 import io
 import base64
-import random
-import string
+import json
+import struct
 import torch
 import numpy as np
 from PIL import Image
@@ -138,18 +138,19 @@ class FriendController:
                 friend["profile_image"] = base64_to_image(friend["profile_base64"])
                 messages_list = []
                 for message in friend["messages_list"]:
-                    enc_latent_tensor = None
-                    enc_seed_bytes = None
-                    if message.get("enc_latent_string"):
-                        buffer = io.BytesIO(base64.b64decode(message["enc_latent_string"]))
-                        npz_file = np.load(buffer)
-                        enc_latent_tensor = torch.tensor(npz_file['latent'])              
-                    if message.get("enc_seed_string"):      
-                        enc_seed_bytes = base64.b64decode(message["enc_seed_string"])
+                    if message.get("text"):
+                        messages_list.append({
+                            "sender_id": message['sender_id'],
+                            "text": message['text'],
+                            "timestamp": message['timestamp'],
+                            "is_read": message['is_read']
+                        })
+                        continue     
+                    enc_seed_bytes = base64.b64decode(message["enc_seed_string"].encode('utf-8'))
                     messages_list.append({
                         "sender_id": message['sender_id'],
-                        "text": message['text'],
-                        "enc_latent_tensor": enc_latent_tensor,
+                        "enc_latent_size": message['enc_latent_size'],
+                        "enc_latent_tensor": message['enc_latent_tensor'],
                         "enc_seed_bytes": enc_seed_bytes,
                         "seed_string": message['seed_string'],
                         "timestamp": message['timestamp'],
@@ -216,7 +217,7 @@ class FriendController:
             "message": "Friend request sent successfully"
         }
     
-    def receive_message(self, friend_id: str, text: str, enc_latent_string: str | None, enc_seed_string: str | None, timestamp: float) -> None:
+    def receive_text_message(self, friend_id: str, text: str, timestamp: float) -> None:
         userStore = UserStore()
         if not userStore.is_authenticated:
             return {
@@ -233,31 +234,65 @@ class FriendController:
             }
         
         is_read = friendStore.selected_friend and friendStore.selected_friend.friend_id == friend_id
-        response = friend_api.create_message(userStore.user_id, friend_id, friend_id, text,
-                                             enc_latent_string, enc_seed_string, seed_string=None,
+        response = friend_api.create_text_message(userStore.user_id, friend_id, friend_id, text,
                                              timestamp=timestamp, is_read=is_read)
 
         if response.get("status") == "success":
             data = response.get("data")
-
-            # Deserialize
-            enc_latent_tensor = None
-            enc_seed_bytes = None
-            if data.get("enc_latent_string"):
-                buffer = io.BytesIO(base64.b64decode(data["enc_latent_string"]))
-                npz_file = np.load(buffer)
-                enc_latent_tensor = torch.tensor(npz_file['latent'])
-            if data.get("enc_seed_string"):
-                buffer = io.BytesIO(base64.b64decode(data["enc_seed_string"]))
-                enc_seed_bytes = buffer.read()
 
             # Update FriendsStore
             message = {
                 "sender_id": data['sender_id'],
                 "text": data['text'],
                 "timestamp": data['timestamp'],
+                "is_read": data['is_read']
+            }
+            friend.messages_list = [*friend.messages_list, message]
+            
+            return {
+                "status": response.get("status", "success"),
+                "message": response.get("message", "Message sent successfully"),
+            }
+        
+        else:
+            return {
+                "status": response.get("status", "error"),
+                "message": response.get("message", "Failed to send message")
+            }
+
+    def receive_latent_message(self, friend_id: str,  enc_latent_size: int, enc_latent_tensor: torch.Tensor, enc_seed_string: str, seed_string: str, timestamp: float) -> None:
+        userStore = UserStore()
+        if not userStore.is_authenticated:
+            return {
+                "status": "error",
+                "message": "User is not authenticated"
+            }
+        
+        friendStore = FriendsStore()
+        friend = friendStore.get_friend(friend_id)
+        if not friend:
+            return {
+                "status": "error",
+                "message": "Friend not found"
+            }
+        
+        is_read = friendStore.selected_friend and friendStore.selected_friend.friend_id == friend_id
+        response = friend_api.create_latent_message(userStore.user_id, friend_id, friend_id, enc_latent_size,
+                                                enc_latent_tensor, enc_seed_string, seed_string,
+                                                timestamp=timestamp, is_read=is_read)
+
+        if response.get("status") == "success":
+            data = response.get("data")
+
+            # Update FriendsStore
+            enc_seed_bytes = base64.b64decode(enc_seed_string.encode('utf-8'))
+            message = {
+                "sender_id": data['sender_id'],
                 "enc_latent_tensor": enc_latent_tensor,
+                "enc_latent_size": data['enc_latent_size'],
                 "enc_seed_bytes": enc_seed_bytes,
+                "seed_string": data['seed_string'],
+                "timestamp": data['timestamp'],
                 "is_read": data['is_read']
             }
             friend.messages_list = [*friend.messages_list, message]
@@ -312,16 +347,13 @@ class FriendController:
                 "message": response.get("message", "Failed to select friend")
             }
 
-    
-    def send_message(self, user_id: str, friend_id: str, text: str | None = '', image: Image.Image | None = None) -> dict:
+    def send_text_message(self, user_id: str, friend_id: str, text: str | None = '') -> dict:
         if not isinstance(user_id, str):
             raise ValueError("User ID must be a string")
         if not isinstance(friend_id, str):
             raise ValueError("Friend ID must be a string")
         if not isinstance(text, str | None):
             raise ValueError("Message must be a string")
-        if not isinstance(image, Image.Image | None):
-            raise ValueError("Image must be a PIL Image object or None")
         
         userStore = UserStore()
         if not userStore.is_authenticated:
@@ -338,30 +370,7 @@ class FriendController:
                 "message": "Friend not found"
             }
         
-        enc_latent_tensor = None
-        enc_latent_string = None
-        enc_seed_bytes = None
-        enc_seed_string = None
-        seed_string = None
-
-        if image:
-            # encode
-            latent_tensor = encode_image_to_latent(image)
-            
-            # encrypt latent
-            seed_string = ''.join(random.choices(string.ascii_letters + string.digits, k=16))
-            enc_latent_tensor = encrypt_latent(latent_tensor, seed_string)
-            buffer = io.BytesIO()
-            arr = enc_latent_tensor.detach().cpu().numpy()
-            np.savez_compressed(buffer, latent=arr)
-            enc_latent_bytes = buffer.getvalue()
-            enc_latent_string = base64.b64encode(enc_latent_bytes).decode("utf-8")
-            
-            # encrypt_seed
-            enc_seed_bytes = encrypt_with_RSAKey(seed_string.encode('utf-8'), friend.public_key)
-            enc_seed_string = base64.b64encode(enc_seed_bytes).decode('utf-8')
-
-        response = friend_api.create_message(user_id, friend_id, user_id, text, enc_latent_string, enc_seed_string, seed_string, is_read=True)
+        response = friend_api.create_text_message(user_id, friend_id, user_id, text, is_read=True)
 
         if response.get("status") == "success":
             data = response.get("data")
@@ -369,7 +378,81 @@ class FriendController:
             message = {
                 "sender_id": data['sender_id'],
                 "text": data['text'],
+                "timestamp": data['timestamp'],
+                "is_read": data['is_read']
+            }
+
+            # Update FriendsStore
+            friend.messages_list = [*friend.messages_list, message]
+
+            # Propagation event
+            socket = ClientSocket(friend.ip, friend.port)
+            socket.send({
+                "type": "text_message",
+                "data": {
+                    "sender_id": data["sender_id"],
+                    "text": data['text'],
+                    "timestamp": data['timestamp'],
+                }
+            })
+
+            return {
+                "status": response.get("status", "success"),
+                "message": response.get("message", "Message sent successfully"),
+            }
+        
+        else:
+            return {
+                "status": response.get("status", "error"),
+                "message": response.get("message", "Failed to send message")
+            }
+
+    def send_latent_message(self, user_id: str, friend_id: str, enc_latent_tensor: torch.Tensor, enc_seed_bytes: str, seed_string: str) -> dict:
+        if not isinstance(user_id, str):
+            raise ValueError("User ID must be a string")
+        if not isinstance(friend_id, str):
+            raise ValueError("Friend ID must be a string")
+        if not isinstance(enc_latent_tensor, torch.Tensor):
+            raise ValueError("Encoded latent tensor must be a torch.Tensor")
+        if not isinstance(enc_seed_bytes, bytes):
+            raise ValueError("Encrypted seed string must be a string")
+        if not isinstance(seed_string, str):
+            raise ValueError("Seed string must be a string")
+        
+        userStore = UserStore()
+        if not userStore.is_authenticated:
+            return {
+                "status": "error",
+                "message": "User is not authenticated"
+            }
+        
+        friendStore = FriendsStore()
+        friend = friendStore.get_friend(friend_id)
+        if not friend:
+            return {
+                "status": "error",
+                "message": "Friend not found"
+            }
+        
+        # Serialize
+        buffer = io.BytesIO()
+        torch.save(enc_latent_tensor, buffer)
+        enc_latent_bytes = buffer.getvalue()
+        enc_latent_size = len(enc_latent_bytes)
+
+        enc_seed_string = base64.b64encode(enc_seed_bytes).decode('utf-8')
+
+        response = friend_api.create_latent_message(user_id, friend_id, user_id, enc_latent_size, enc_latent_tensor, enc_seed_string, seed_string, is_read=True)
+
+        if response.get("status") == "success":
+            data = response.get("data")
+
+            # Skip deserialization and use previously encoded values
+
+            message = {
+                "sender_id": data['sender_id'],
                 "enc_latent_tensor": enc_latent_tensor,
+                "enc_latent_size": enc_latent_size,
                 "enc_seed_bytes": enc_seed_bytes,
                 "seed_string": data['seed_string'],
                 "timestamp": data['timestamp'],
@@ -382,17 +465,15 @@ class FriendController:
             # Propagation event
             socket = ClientSocket(friend.ip, friend.port)
             socket.send({
-                "type": "new_message",
+                "type": "latent_message",
                 "data": {
                     "sender_id": data["sender_id"],
-                    "text": data['text'],
-                    "enc_latent_tensor": data["enc_latent_string"],
-                    "enc_seed_string": data['enc_seed_string'],
+                    "enc_latent_size": enc_latent_size,
+                    "enc_seed_string": enc_seed_string,
                     "seed_string": None,
                     "timestamp": data['timestamp'],
-                    "is_read": data['is_read']
                 }
-            })
+            }, binary_bytes=enc_latent_bytes, binary_type="pt")
 
             return {
                 "status": response.get("status", "success"),
@@ -457,11 +538,15 @@ class FriendController:
                 "message": response.get("message", "Failed to update friend profile")
             }
     
-    def _handle_socket_response(self, response):
-        type = response.get("type")
-        data = response.get("data")
+    def _handle_socket_response(self, json_dict: dict, binary_bytes: bytes | None = None, binary_type: str | None = None):
+        type = json_dict.get("type")
+        data = json_dict.get("data")
 
         userStore = UserStore()
+
+        print(f"[FriendController] Received socket response: {json_dict}"
+              f"{' with binary data' if binary_bytes else ''}"
+                f"{' of type ' + binary_type if binary_type else ''}")
 
         if type == "request_friend":
             # Accept friend request
@@ -506,10 +591,17 @@ class FriendController:
                 profile_image=profile_image
             )
     
-        elif type == "new_message":
+        elif type == "text_message":
             sender_id = data["sender_id"]
             text = data["text"]
-            enc_latent_string = data.get("enc_latent_tensor", None)
-            enc_seed_string = data.get("enc_seed_string", None)
             timestamp = data["timestamp"]
-            self.receive_message(sender_id, text, enc_latent_string, enc_seed_string, timestamp)
+            self.receive_text_message(sender_id, text, timestamp)
+
+        elif type == "latent_message":
+            sender_id = data["sender_id"]
+            enc_latent_size = data["enc_latent_size"]
+            enc_latent_tensor = torch.load(io.BytesIO(binary_bytes)) if binary_bytes else None
+            enc_seed_string = data["enc_seed_string"]
+            seed_string = data.get("seed_string", None)
+            timestamp = data["timestamp"]
+            self.receive_latent_message(sender_id, enc_latent_size, enc_latent_tensor, enc_seed_string, seed_string, timestamp)

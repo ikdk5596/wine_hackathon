@@ -1,6 +1,7 @@
 import io
 import customtkinter as ctk
 import tkinter.filedialog as fd
+import torch
 from ui.atoms.toast import Toast
 from ui.atoms.button import Button
 from ui.atoms.input import Input
@@ -25,7 +26,8 @@ class DecryptImage(ctk.CTkFrame):
 
         buffer = io.BytesIO()
         self.latent_image_label.original_image.save(buffer, format="PNG")
-        size_kb = len(buffer.getvalue()) / 1024  # size in KB
+        # size_kb = len(buffer.getvalue()) / 1024  # size in KB
+        size_kb = message["enc_latent_size"] / 1024  # size in KB
         self.size_label = ctk.CTkLabel(self, text=f"Size: {size_kb:.0f} KB", font=("Helvetica", 16), text_color="gray")
         self.size_label.pack(pady=(0, 10))
 
@@ -48,6 +50,7 @@ class DecryptImage(ctk.CTkFrame):
             # authentication
             seed_string = 'wrong-seed'
             result = UserController().login(UserStore().user_id, self.entry.get())
+
             if result['status'] == 'success':
                 # decrypt seed
                 enc_seed_bytes = self.message["enc_seed_bytes"]
@@ -67,15 +70,14 @@ class DecryptImage(ctk.CTkFrame):
         except Exception as e:
             Toast(self, f"Authentication failed: {str(e)}", type="error", duration=2000)
             return
-        
-        self.entry.clear()
 
     def save_image(self):
         try:
-            decoded_image = self.latent_image_label.original_image
-            file_path = fd.asksaveasfilename(defaultextension=".png", filetypes=[("PNG files", "*.png")], initialfile="decrypted_image.png")
+            file_path = fd.asksaveasfilename(    defaultextension=".pt",
+                filetypes=[("PyTorch Tensor", "*.pt"), ("All Files", "*.*")],
+                title="Save Tensor As"
+            )
             if file_path:
-                decoded_image.save(file_path)
-                Toast(self, "Image saved successfully!", type="success", duration=2000)
+                torch.save(self.message['enc_latent_tensor'], file_path)
         except Exception as e:
             Toast(self, f"Error saving image: {str(e)}", type="error", duration=2000)
