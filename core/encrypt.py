@@ -64,7 +64,7 @@ def main():
         print(f"Error: Image file not found: {args.image_path}")
         return
     
-    encrypt_image(args.image_path, args.key, args.rounds)
+    encrypt_image(args.image_path, args.key, args.size, args.rounds)
     print("Encryption completed!")
 
 
