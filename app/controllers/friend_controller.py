@@ -123,6 +123,8 @@ class FriendController:
 
         response = friend_api.get_friends(UserStore().user_id)
 
+        print(response)
+
         if response.get("status") == "success":
             data = response.get("data")
             

@@ -22,7 +22,7 @@ def _get_latent_path(user_id: str, friend_id: str, enc_seed_string: str) -> str:
     save_dir = os.path.join(LATENTS_DB_PATH, user_id, friend_id)
     os.makedirs(save_dir, exist_ok=True)
 
-    filename = f"{enc_seed_string[:10]}"
+    filename = f"{enc_seed_string[:10]}.npy"
     full_path = os.path.join(save_dir, filename)
     
     return save_dir, full_path
@@ -160,8 +160,10 @@ def get_friends(user_id: str) -> dict:
             if 'enc_latent_path' in message:
                 enc_latent_path = message['enc_latent_path']
                 if os.path.exists(enc_latent_path):
+                    print(1)
                     message['enc_latent_array'] = np.load(enc_latent_path)
                 else:
+                    print(2)
                     message['enc_latent_array'] = None
     
     return {
