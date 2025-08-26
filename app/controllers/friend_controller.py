@@ -1,11 +1,15 @@
 import io
 import base64
+import random
+import string
 import numpy as np
 from PIL import Image
 from api import friend_api
 from utils.network import get_my_ip, get_my_port
+from utils.core.encryption import encrypt_with_RSAKey, decrypt_with_RSAKey
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric.rsa import RSAPublicKey
+from utils.DoubleRatchet import DoubleRatchet
 from utils.socket.server_socket import ServerSocket
 from utils.socket.client_socket import ClientSocket
 from utils.image import base64_to_image, image_to_base64
@@ -30,7 +34,7 @@ class FriendController:
     def _init_state(self):
         ServerSocket().add_callback(self._handle_socket_response)
 
-    def add_friend(self, user_id: str, ip: str, port: int, friend_id: str, public_key: RSAPublicKey, profile_image: Image.Image | None) -> dict:
+    def add_friend(self, user_id: str, ip: str, port: int, friend_id: str, public_key: RSAPublicKey, profile_image: Image.Image | None, root_key: bytes) -> dict:
         if not isinstance(ip, str):
             raise ValueError("IP address must be a string")
         if not isinstance(port, int):
@@ -44,20 +48,32 @@ class FriendController:
         if not isinstance(profile_image, Image.Image | None):
             raise ValueError("Profile image must be a PIL Image object")
         
-        if not UserStore().is_authenticated:
+        userStore = UserStore()
+
+        if not userStore.is_authenticated:
             return {
                 "status": "error",
                 "message": "User is not authenticated"
             }
         
-        # Serialize
-        public_key = public_key.public_bytes(
+        # Create key bytes
+        priv_bytes = userStore.private_key.private_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PrivateFormat.PKCS8,
+            encryption_algorithm=serialization.NoEncryption()
+        )
+        pub_bytes = public_key.public_bytes(
             encoding=serialization.Encoding.PEM,
             format=serialization.PublicFormat.SubjectPublicKeyInfo
-        ).decode('utf-8')
+        )
+        doubleRatchet = DoubleRatchet(root_key, priv_bytes, pub_bytes)
+        
+        # Serialize
+        public_key = pub_bytes.decode('utf-8')
         profile_base64 = image_to_base64(profile_image) if profile_image else None
+        double_ratchet_info = doubleRatchet.to_json()
 
-        response = friend_api.create_friend(user_id, ip, port, friend_id, public_key, profile_base64)
+        response = friend_api.create_friend(user_id, ip, port, friend_id, public_key, profile_base64, double_ratchet_info)
 
         if response.get("status") == "success":
             data = response.get("data")
@@ -74,10 +90,10 @@ class FriendController:
                 friend_id=data["friend_id"],
                 public_key=public_key,
                 profile_image=profile_image,
-                messages_list=[]
+                messages_list=[],
+                doubleRatchet = doubleRatchet
             )
-            FriendsStore().add_friend(friend)
-            
+            FriendsStore().add_friend(friend)            
             return {
                 "status": response.get("status", "success"),
                 "message": response.get("message", "Friend added successfully"),
@@ -153,6 +169,7 @@ class FriendController:
                         "timestamp": message['timestamp'],
                         "is_read": message['is_read']
                     })
+                doubleRatchet = DoubleRatchet.from_json(friend["double_ratchet_info"])
                 friends_list.append(Friend(
                     user_id=friend["user_id"],
                     ip=friend["ip"],
@@ -160,7 +177,8 @@ class FriendController:
                     friend_id=friend["friend_id"],
                     public_key=friend["public_key"],
                     profile_image=friend["profile_image"],
-                    messages_list= messages_list
+                    messages_list= messages_list,
+                    doubleRatchet=doubleRatchet
                 ))
             
             # Update FriendsStore
@@ -214,7 +232,7 @@ class FriendController:
             "message": "Friend request sent successfully"
         }
     
-    def receive_text_message(self, friend_id: str, text: str, timestamp: float) -> None:
+    def receive_text_message(self, friend_id: str, dr_message: str, timestamp: float) -> None:
         userStore = UserStore()
         if not userStore.is_authenticated:
             return {
@@ -230,8 +248,10 @@ class FriendController:
                 "message": "Friend not found"
             }
         
+        text = friend.doubleRatchet.decrypt(dr_message).decode()
+        double_ratchet_info = friend.doubleRatchet.to_json()
         is_read = friendStore.selected_friend and friendStore.selected_friend.friend_id == friend_id
-        response = friend_api.create_text_message(userStore.user_id, friend_id, friend_id, text,
+        response = friend_api.create_text_message(userStore.user_id, friend_id, friend_id, text, double_ratchet_info,
                                              timestamp=timestamp, is_read=is_read)
 
         if response.get("status") == "success":
@@ -367,7 +387,9 @@ class FriendController:
                 "message": "Friend not found"
             }
         
-        response = friend_api.create_text_message(user_id, friend_id, user_id, text, is_read=True)
+        dr_message = friend.doubleRatchet.encrypt(text.encode('utf-8'))
+        double_ratchet_info = friend.doubleRatchet.to_json()
+        response = friend_api.create_text_message(user_id, friend_id, user_id, text, double_ratchet_info, is_read=True)
 
         if response.get("status") == "success":
             data = response.get("data")
@@ -388,7 +410,7 @@ class FriendController:
                 "type": "text_message",
                 "data": {
                     "sender_id": data["sender_id"],
-                    "text": data['text'],
+                    "dr_message": dr_message,
                     "timestamp": data['timestamp'],
                 }
             })
@@ -549,50 +571,60 @@ class FriendController:
             # Accept friend request
             public_key = serialization.load_pem_public_key(data["public_key"].encode('utf-8'))
             profile_image = base64_to_image(data["profile_base64"])
-            self.add_friend(
+            root_key =  ''.join(random.choices(string.ascii_letters + string.digits, k=16)).encode('utf-8')
+            result = self.add_friend(
                 user_id=userStore.user_id,
                 ip=data["ip"],
                 port=data["port"],
                 friend_id=data["user_id"],
                 public_key=public_key,
-                profile_image=profile_image
+                profile_image=profile_image,
+                root_key=root_key
             )
-            # Send response
-            public_key = userStore.public_key.public_bytes(
-                encoding=serialization.Encoding.PEM,
-                format=serialization.PublicFormat.SubjectPublicKeyInfo
-            ).decode('utf-8')
-            profile_base64 = image_to_base64(userStore.profile_image) if userStore.profile_image else None
-            response_socket = ClientSocket(data["ip"], data["port"])
-            response_socket.send({
-                "type": "response_friend",
-                "data": {
-                    "ip": get_my_ip(),
-                    "port": get_my_port(),
-                    "user_id": userStore.user_id,
-                    "public_key": public_key,
-                    "profile_base64": profile_base64
-                }
-            })
+            if result["status"] == "success":
+                root_key = encrypt_with_RSAKey(root_key, public_key)
+                root_key = base64.b64encode(root_key).decode('utf-8') 
+                public_key = userStore.public_key.public_bytes(
+                    encoding=serialization.Encoding.PEM,
+                    format=serialization.PublicFormat.SubjectPublicKeyInfo
+                ).decode('utf-8')
+                profile_base64 = image_to_base64(userStore.profile_image) if userStore.profile_image else None
+
+                response_socket = ClientSocket(data["ip"], data["port"])
+                response_socket.send({
+                    "type": "response_friend",
+                    "data": {
+                        "ip": get_my_ip(),
+                        "port": get_my_port(),
+                        "user_id": userStore.user_id,
+                        "public_key": public_key,
+                        "profile_base64": profile_base64,
+                        "root_key": root_key
+                    }
+                })
 
         elif type == "response_friend":
             # Accept friend request
             public_key = serialization.load_pem_public_key(data["public_key"].encode('utf-8'))
             profile_image = base64_to_image(data["profile_base64"])
-            self.add_friend(
+            root_key = base64.b64decode(data['root_key'])
+            root_key = decrypt_with_RSAKey(root_key, userStore.private_key)
+
+            result = self.add_friend(
                 user_id=userStore.user_id,
                 ip=data["ip"],
                 port=data["port"],
                 friend_id=data["user_id"],
                 public_key=public_key,
-                profile_image=profile_image
+                profile_image=profile_image,
+                root_key=root_key
             )
     
         elif type == "text_message":
             sender_id = data["sender_id"]
-            text = data["text"]
+            dr_message = data["dr_message"]
             timestamp = data["timestamp"]
-            self.receive_text_message(sender_id, text, timestamp)
+            self.receive_text_message(sender_id, dr_message, timestamp)
 
         elif type == "latent_message":
             sender_id = data["sender_id"]

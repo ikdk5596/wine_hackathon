@@ -28,7 +28,7 @@ def _get_latent_path(user_id: str, friend_id: str, enc_seed_string: str) -> str:
     return save_dir, full_path
     
 # api
-def create_friend(user_id: str, ip:str, port: int, friend_id:str, public_key: str, profile_base64: str) -> dict:
+def create_friend(user_id: str, ip:str, port: int, friend_id:str, public_key: str, profile_base64: str, double_ratchet_info) -> dict:
     friends = _load_friends()
 
     for friend in friends:
@@ -45,7 +45,8 @@ def create_friend(user_id: str, ip:str, port: int, friend_id:str, public_key: st
         "friend_id": friend_id,
         "public_key": public_key,
         "profile_base64": profile_base64,
-        "messages_list": []
+        "messages_list": [],
+        "double_ratchet_info" : double_ratchet_info
     })
     _save_friends(friends)
 
@@ -59,11 +60,12 @@ def create_friend(user_id: str, ip:str, port: int, friend_id:str, public_key: st
             "friend_id": friend_id,
             "public_key": public_key,
             "profile_base64": profile_base64,
-            "messages_list": []
+            "messages_list": [],
+            "double_ratchet_info": double_ratchet_info
         }
     }
 
-def create_text_message(user_id: str, friend_id: str, sender_id: str, text: str,
+def create_text_message(user_id: str, friend_id: str, sender_id: str, text: str, double_ratchet_info: dict,
                    timestamp: float = time.time(), is_read: bool = False) -> dict:
     friends = _load_friends()
 
@@ -75,8 +77,8 @@ def create_text_message(user_id: str, friend_id: str, sender_id: str, text: str,
                 "timestamp" : timestamp,
                 "is_read": is_read
             }
-
             friend['messages_list'].append(message)
+            friend['double_ratchet_info'] = double_ratchet_info
             _save_friends(friends)
 
             return {
