@@ -4,8 +4,9 @@ import customtkinter as ctk
 import tkinter.filedialog as fd
 from ui.atoms.button import Button
 from utils.image import path_to_image
-from utils.core.encoding import encode_image_to_latent
-from utils.core.encryption import encrypt_latent, encrypt_with_RSAKey
+from utils.core.onnx_encoding import encode_image_to_latent
+from utils.core.onnx_encryption import encrypt_latent
+from utils.core.encryption import encrypt_with_RSAKey
 from states.friends_store import FriendsStore
 from states.user_store import UserStore
 from controllers.friend_controller import FriendController
@@ -50,11 +51,11 @@ class ChatInput(ctk.CTkFrame):
             self.send_button.configure(state='disabled')
             
             image = path_to_image(self.selected_file)
-            latent_tensor = encode_image_to_latent(image)
+            latent_array = encode_image_to_latent(image)
             
             # encrypt latent
             self.seed_string = ''.join(random.choices(string.ascii_letters + string.digits, k=16))
-            self.enc_latent_tensor = encrypt_latent(latent_tensor, self.seed_string)
+            self.enc_latent_array = encrypt_latent(latent_array, self.seed_string)
             
             # encrypt_seed
             self.enc_seed_bytes = encrypt_with_RSAKey(self.seed_string.encode('utf-8'), friend.public_key)
@@ -64,7 +65,7 @@ class ChatInput(ctk.CTkFrame):
             self.send_button.configure(state='normal')
         else:
             self.selected_file = None
-            self.enc_latent_tensor = None
+            self.enc_latent_array = None
             self.enc_seed_string = None
             self.seed_string = None
             self.file_button.configure(text="Choose file")
@@ -84,7 +85,7 @@ class ChatInput(ctk.CTkFrame):
             FriendController().send_latent_message(
                 UserStore().user_id,
                 FriendsStore().selected_friend.friend_id,
-                self.enc_latent_tensor,
+                self.enc_latent_array,
                 self.enc_seed_bytes,
                 self.seed_string,
             )

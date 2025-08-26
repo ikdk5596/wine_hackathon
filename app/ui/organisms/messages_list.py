@@ -6,9 +6,9 @@ from ui.atoms.profile import Profile
 from ui.atoms.modal import Modal
 from ui.atoms.image_frame import ImageFrame
 from utils.image import latent_to_gray_image
-from utils.core.encoding import decode_latent_to_image
+from utils.core.onnx_encoding import decode_latent_to_image
+from utils.core.onnx_encryption import decrypt_latent
 from ui.organisms.decrypt_image import DecryptImage
-from utils.core.encryption import decrypt_latent
 
 class FriendMessage(ctk.CTkFrame):
     def __init__(self, master, message, friend_id: str, profile_image: Image.Image | None, show_profile: bool):
@@ -28,8 +28,8 @@ class FriendMessage(ctk.CTkFrame):
         message_frame = ctk.CTkFrame(self, fg_color="transparent")
         message_frame.grid(row=1 if show_profile else 0, column=1, sticky="w", padx=(0, 2) if show_profile else (74, 2), pady=(5, 0))
 
-        if 'enc_latent_tensor' in message and message['enc_latent_tensor'] is not None:
-            latent_image = latent_to_gray_image(message["enc_latent_tensor"])
+        if 'enc_latent_array' in message and message['enc_latent_array'] is not None:
+            latent_image = latent_to_gray_image(message["enc_latent_array"])
             self.latent_image_frame = ImageFrame(
                 master=message_frame,
                 image=latent_image,
@@ -59,9 +59,9 @@ class FriendMessage(ctk.CTkFrame):
 class MyMessage(ctk.CTkFrame):
     def __init__(self, master, message):
         super().__init__(master, fg_color="transparent")
-        if 'enc_latent_tensor' in message and message['enc_latent_tensor'] is not None:
-            latent_tensor = decrypt_latent(message["enc_latent_tensor"], message["seed_string"])
-            latent_image = decode_latent_to_image(latent_tensor)
+        if 'enc_latent_array' in message and message['enc_latent_array'] is not None:
+            latent_array = decrypt_latent(message["enc_latent_array"], message["seed_string"])
+            latent_image = decode_latent_to_image(latent_array)
             self.latent_image_frame = ImageFrame(
                 master=self,
                 image=latent_image,

@@ -1,7 +1,6 @@
 import os
 import time
 import json
-import torch
 import numpy as np
 
 FRIENDS_DB_PATH = "db/friends.json"
@@ -97,7 +96,7 @@ def create_text_message(user_id: str, friend_id: str, sender_id: str, text: str,
     }
 
 def create_latent_message(user_id: str, friend_id: str, sender_id: str, enc_latent_size: int,
-                   enc_latent_tensor: torch.Tensor, enc_seed_string: str, seed_string: str,
+                   enc_latent_array: np.ndarray, enc_seed_string: str, seed_string: str,
                    timestamp: float = time.time(), is_read: bool = False) -> dict:
     friends = _load_friends()
 
@@ -106,7 +105,7 @@ def create_latent_message(user_id: str, friend_id: str, sender_id: str, enc_late
             save_dir, enc_latent_path = _get_latent_path(user_id, friend_id, enc_seed_string)
             if not os.path.exists(save_dir):
                 os.makedirs(save_dir)
-            torch.save(enc_latent_tensor, enc_latent_path)
+            np.save( enc_latent_path, enc_latent_array)
 
             message = {
                 "sender_id": sender_id,
@@ -127,7 +126,7 @@ def create_latent_message(user_id: str, friend_id: str, sender_id: str, enc_late
                 "data": {
                     "sender_id": sender_id,
                     "enc_latent_size": enc_latent_size,
-                    "enc_latent_tensor": enc_latent_tensor,
+                    "enc_latent_array": enc_latent_array,
                     "enc_seed_string": enc_seed_string,
                     "seed_string": seed_string,
                     "timestamp" : timestamp,
@@ -161,9 +160,9 @@ def get_friends(user_id: str) -> dict:
             if 'enc_latent_path' in message:
                 enc_latent_path = message['enc_latent_path']
                 if os.path.exists(enc_latent_path):
-                    message['enc_latent_tensor'] = torch.load(enc_latent_path)
+                    message['enc_latent_array'] = np.load(enc_latent_path)
                 else:
-                    message['enc_latent_tensor'] = None
+                    message['enc_latent_array'] = None
     
     return {
         "status": "success", 

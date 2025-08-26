@@ -14,7 +14,7 @@ encoder.to(torch_device)
 decoder = Decoder()
 decoder.to(torch_device)
 
-def encode_image_to_latent(image: Image.Image) -> torch.Tensor:
+def encode_image_to_latent(image: Image.Image) -> np.ndarray:
     # Preprocess the image
     if image.mode == 'RGBA':
         image = image.convert('RGB')
@@ -33,7 +33,7 @@ def encode_image_to_latent(image: Image.Image) -> torch.Tensor:
     return latent
 
 
-def decode_latent_to_image(latent: torch.Tensor) -> Image.Image:
+def decode_latent_to_image(latent: np.ndarray) -> Image.Image:
     # Decode the latent representation to an image
     with torch.no_grad():
         decoded = decoder(latent)
