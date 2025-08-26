@@ -62,7 +62,7 @@ class DoubleRatchet:
         })
 
 
-    def decrypt(self, message: dict) -> bytes:
+    def decrypt(self, json_str: dict) -> bytes:
         def decode(s): return b64decode(s.encode())
 
         message = json.loads(json_str)
