@@ -25,7 +25,7 @@ This project proposes an **AI-powered intelligent secure messenger system** to a
 |----------|--------|
 | Sanghong Kim   | sanghongkim@korea.ac.kr |
 | Byongho Lee   | unlike96@korea.ac.kr     |
-| Kyeonghyun You   | seven1705@korea.ac.kr    |
+| Kyeonghyun Yoo   | seven1705@korea.ac.kr    |
 | Geonwoo Kim   | bbosam2004@gmail.com     |
 | Seungjoo Lee   | joon8958@gmail.com       |
 
