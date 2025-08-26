@@ -6,11 +6,14 @@ from ui.atoms.toast import Toast
 from ui.atoms.button import Button
 from ui.atoms.input import Input
 from ui.atoms.image_frame import ImageFrame
-from utils.core.encoding import decode_latent_to_image
-from utils.core.encryption import decrypt_latent, decrypt_with_RSAKey
+from utils.core.encoding import encode_image_to_latent, decode_latent_to_image
+from utils.core.encryption import encrypt_latent, decrypt_latent, decrypt_with_RSAKey
+from utils.mac import get_mac_address
 from utils.image import latent_to_gray_image
 from states.user_store import UserStore
 from controllers.user_controller import UserController
+
+MAC_ADDRESS = get_mac_address
 
 class DecryptImage(ctk.CTkFrame):
     def __init__(self, master, message):
@@ -56,6 +59,7 @@ class DecryptImage(ctk.CTkFrame):
                 enc_seed_bytes = self.message["enc_seed_bytes"]
                 seed_bytes = decrypt_with_RSAKey(enc_seed_bytes, UserStore().private_key)
                 seed_string = seed_bytes.decode('utf-8')  # Ensure seed is a string
+
             # decrypt latent tensor
             latent_tensor = decrypt_latent(self.message['enc_latent_tensor'], seed_string)
             decoded_image = decode_latent_to_image(latent_tensor)
@@ -78,6 +82,8 @@ class DecryptImage(ctk.CTkFrame):
                 title="Save Tensor As"
             )
             if file_path:
-                torch.save(self.message['enc_latent_tensor'], file_path)
+                latent_tensor = encode_image_to_latent(self.latent_image_label.image)
+                enc_latent_tensor = encrypt_latent(latent_tensor, MAC_ADDRESS)
+                torch.save(enc_latent_tensor, file_path)
         except Exception as e:
             Toast(self, f"Error saving image: {str(e)}", type="error", duration=2000)

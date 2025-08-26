@@ -9,8 +9,12 @@ class ImageFrame(ctk.CTkLabel):
         self.border_radius = border_radius
         self.update_image(image)
 
-    def update_image(self, image: Image.Image):
-        self.original_image = image
+    def update_image(self, image: Image.Image | None):
+        self.image = image
+
+        if image is None:
+            gray_image = Image.new("RGB", (self.width, self.height), (200, 200, 200)) 
+            image = gray_image
 
         # rounded rectangle mask
         mask = Image.new("L", (self.width, self.height), 0)

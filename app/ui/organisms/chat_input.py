@@ -1,9 +1,5 @@
-import io
 import random
 import string
-import base64
-import numpy as np
-import time
 import customtkinter as ctk
 import tkinter.filedialog as fd
 from ui.atoms.button import Button
