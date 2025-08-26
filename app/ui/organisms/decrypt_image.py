@@ -13,7 +13,7 @@ from utils.image import latent_to_gray_image
 from states.user_store import UserStore
 from controllers.user_controller import UserController
 
-MAC_ADDRESS = get_mac_address
+MAC_ADDRESS = get_mac_address()
 
 class DecryptImage(ctk.CTkFrame):
     def __init__(self, master, message):
@@ -28,7 +28,7 @@ class DecryptImage(ctk.CTkFrame):
         self.latent_image_label.pack(padx=40, pady=(20, 10))
 
         buffer = io.BytesIO()
-        self.latent_image_label.original_image.save(buffer, format="PNG")
+        self.latent_image_label.image.save(buffer, format="PNG")
         # size_kb = len(buffer.getvalue()) / 1024  # size in KB
         size_kb = message["enc_latent_size"] / 1024  # size in KB
         self.size_label = ctk.CTkLabel(self, text=f"Size: {size_kb:.0f} KB", font=("Helvetica", 16), text_color="gray")
@@ -63,7 +63,7 @@ class DecryptImage(ctk.CTkFrame):
             # decrypt latent tensor
             latent_tensor = decrypt_latent(self.message['enc_latent_tensor'], seed_string)
             decoded_image = decode_latent_to_image(latent_tensor)
-            self.latent_image_label.configure(image=ctk.CTkImage(dark_image=decoded_image, size=(256, 256)))
+            self.latent_image_label.update_image(decoded_image)
             self.latent_image_label.pack(pady=(20, 10))
 
             # update image size
