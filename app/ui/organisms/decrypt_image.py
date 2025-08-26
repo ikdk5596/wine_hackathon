@@ -64,6 +64,7 @@ class DecryptImage(ctk.CTkFrame):
             # decrypt latent tensor
             latent_array = decrypt_latent(self.message['enc_latent_array'], seed_string)
             decoded_image = decode_latent_to_image(latent_array)
+            
             self.latent_image_label.update_image(decoded_image)
             self.latent_image_label.pack(pady=(20, 10))
 
