@@ -581,8 +581,8 @@ class FriendController:
                 root_key=root_key
             )
             if result["status"] == "success":
-                # Send response
-                root_key = encrypt_with_RSAKey(root_key, public_key).decode('utf-8')
+                root_key = encrypt_with_RSAKey(root_key, public_key)
+                root_key = base64.b64encode(root_key).decode('utf-8') 
                 public_key = userStore.public_key.public_bytes(
                     encoding=serialization.Encoding.PEM,
                     format=serialization.PublicFormat.SubjectPublicKeyInfo
@@ -606,8 +606,9 @@ class FriendController:
             # Accept friend request
             public_key = serialization.load_pem_public_key(data["public_key"].encode('utf-8'))
             profile_image = base64_to_image(data["profile_base64"])
-            root_key = decrypt_with_RSAKey(base64.b64decode(data['root_key']), userStore.private_key)
-            
+            root_key = base64.b64decode(data['rookt_key'].encode('utf-8'))
+            root_key = decrypt_with_RSAKey(root_key, userStore.private_key)
+
             result = self.add_friend(
                 user_id=userStore.user_id,
                 ip=data["ip"],
