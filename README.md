@@ -70,11 +70,15 @@ This is a GUI program that provides a chat-style user interface. Users can selec
    ```bash
     pip install -r requirements.txt
    ```
-4. **Run the application.**  
+4. **Export ONNX models (Encoder & Decoder).**
+   ```bash
+    python setup.py
+   ```   
+6. **Run the application.**  
    ```bash
     python main.py
    ```
-5. **You can find the usage instructions in the tutorial video : https://youtu.be/6IaboUmv0tE**
+7. **You can find the usage instructions in the tutorial video : https://youtu.be/6IaboUmv0tE**
 
 ### CLI Program
 This is a CLI (Command Line Interface) program that provides functionality for encrypting and decrypting image files. It implements the core logic of the application, converting image files into encrypted latent vectors and allowing them to be decrypted.
