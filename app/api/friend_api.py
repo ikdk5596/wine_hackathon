@@ -22,7 +22,7 @@ def _get_latent_path(user_id: str, friend_id: str, enc_seed_string: str) -> str:
     save_dir = os.path.join(LATENTS_DB_PATH, user_id, friend_id)
     os.makedirs(save_dir, exist_ok=True)
 
-    filename = f"{enc_seed_string[:10]}.npz"
+    filename = f"{enc_seed_string[:10]}"
     full_path = os.path.join(save_dir, filename)
     
     return save_dir, full_path
@@ -105,7 +105,7 @@ def create_latent_message(user_id: str, friend_id: str, sender_id: str, enc_late
             save_dir, enc_latent_path = _get_latent_path(user_id, friend_id, enc_seed_string)
             if not os.path.exists(save_dir):
                 os.makedirs(save_dir)
-            np.save( enc_latent_path, enc_latent_array)
+            np.save(enc_latent_path, enc_latent_array)
 
             message = {
                 "sender_id": sender_id,

@@ -8,7 +8,8 @@ def encrypt_latent(latent: list, key: str, num_rounds: int = 8) -> np.ndarray:
         rng = np.random.default_rng(seed)
         noise = rng.standard_normal(size=encrypted.shape)
         encrypted += noise
-    return encrypted[0]
+    print(encrypted.shape)
+    return encrypted
 
 
 def decrypt_latent(encrypted_latent: np.ndarray, key: str, num_rounds: int = 8) -> np.ndarray:

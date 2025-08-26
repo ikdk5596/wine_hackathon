@@ -28,13 +28,16 @@ def encode_image_to_latent(image: Image.Image) -> np.ndarray:
 
 def decode_latent_to_image(latent: np.ndarray) -> Image.Image:
     """Convert latent tensor to PIL image using decoder ONNX model."""
+
+    # print(latent.shape)
     # decoding
     input_name = decoder_session.get_inputs()[0].name
     output_name = decoder_session.get_outputs()[0].name
     prediction = decoder_session.run([output_name], {input_name: latent})[0]
 
     # postprocess
-    x = np.clip((prediction[0] + 1.0) * 0.5, 0.0, 1.0)[0]  # (3,H,W)
+    x = np.clip((prediction[0] + 1.0) * 0.5, 0.0, 1.0)  # (3,H,W)
+    print('x', x.shape)
     x = (x.transpose(1, 2, 0) * 255.0).round().astype(np.uint8)  # (H,W,3)
     return Image.fromarray(x)
 
