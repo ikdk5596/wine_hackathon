@@ -1,8 +1,9 @@
 from PIL import Image
 from states.observable import Observable
+from utils.DoubleRatchet import DoubleRatchet
 
 class Friend(Observable):
-    def __init__(self, user_id: str, ip: str, port: int, friend_id: str, public_key: str, profile_image: Image.Image | None, messages_list: list):
+    def __init__(self, user_id: str, ip: str, port: int, friend_id: str, public_key: str, profile_image: Image.Image | None, messages_list: list, doubleRatchet: DoubleRatchet):
         super().__init__()
         self.ip = ip
         self.port = port
@@ -11,6 +12,7 @@ class Friend(Observable):
         self.public_key = public_key
         self._profile_image = profile_image
         self._messages_list = messages_list
+        self.doubleRatchet = doubleRatchet
 
     @property
     def profile_image(self):
