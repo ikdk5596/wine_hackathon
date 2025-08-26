@@ -41,7 +41,7 @@ class DoubleRatchet:
         self.send_count = 0
 
     def encrypt(self, plaintext: bytes) -> dict:
-        if self.send_count > 0 and self.send_count % 20 == 0:
+        if self.send_count > 0 and self.send_count % 100 == 0:
             self._ratchet()
 
         self.send_chain_key, msg_key = self._kdf_chain(self.send_chain_key)
