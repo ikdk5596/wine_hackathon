@@ -14,7 +14,7 @@ from utils.image import latent_to_gray_image
 from states.user_store import UserStore
 from controllers.user_controller import UserController
 
-MAC_ADDRESS = get_mac_address
+MAC_ADDRESS = get_mac_address()
 
 class DecryptImage(ctk.CTkFrame):
     def __init__(self, master, message):
@@ -64,7 +64,7 @@ class DecryptImage(ctk.CTkFrame):
             # decrypt latent tensor
             latent_array = decrypt_latent(self.message['enc_latent_array'], seed_string)
             decoded_image = decode_latent_to_image(latent_array)
-            self.latent_image_label.configure(image=ctk.CTkImage(dark_image=decoded_image, size=(256, 256)))
+            self.latent_image_label.update_image(decoded_image)
             self.latent_image_label.pack(pady=(20, 10))
 
             # update image size
@@ -84,7 +84,7 @@ class DecryptImage(ctk.CTkFrame):
                 title="Save Array As"
             )
             if file_path:
-                latent_array = encode_image_to_latent(self.latent_image_label.original_image)
+                latent_array = encode_image_to_latent(self.latent_image_label.image)
                 enc_latent_array = encrypt_latent(latent_array, MAC_ADDRESS)
                 np.save(file_path, enc_latent_array)
         except Exception as e:
