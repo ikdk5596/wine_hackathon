@@ -103,8 +103,8 @@ This is a CLI (Command Line Interface) program that provides functionality for e
    ```bash
     pip install -r requirements.txt
    ```
-4. **Execute encryption.**
-      The image is converted into a latent vector and saved as an encrypted file.
+4. **Execute encryption.**  
+   The image is converted into a latent vector and saved as an encrypted file.
    - Input image file: `{input_image.png}`
    - Encryption key: `{key}` (A unique secret key entered by the user)
    - Encrypted latent vector file: `{encrypted_latent.pt}`
