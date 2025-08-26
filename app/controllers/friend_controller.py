@@ -34,7 +34,7 @@ class FriendController:
     def _init_state(self):
         ServerSocket().add_callback(self._handle_socket_response)
 
-    def add_friend(self, user_id: str, ip: str, port: int, friend_id: str, public_key: RSAPublicKey, profile_image: Image.Image | None, root_key: str) -> dict:
+    def add_friend(self, user_id: str, ip: str, port: int, friend_id: str, public_key: RSAPublicKey, profile_image: Image.Image | None, root_key: bytes) -> dict:
         if not isinstance(ip, str):
             raise ValueError("IP address must be a string")
         if not isinstance(port, int):
@@ -570,7 +570,7 @@ class FriendController:
             # Accept friend request
             public_key = serialization.load_pem_public_key(data["public_key"].encode('utf-8'))
             profile_image = base64_to_image(data["profile_base64"])
-            root_key =  ''.join(random.choices(string.ascii_letters + string.digits, k=16))
+            root_key =  ''.join(random.choices(string.ascii_letters + string.digits, k=16)).encode('utf-8')
             result = self.add_friend(
                 user_id=userStore.user_id,
                 ip=data["ip"],
@@ -582,7 +582,7 @@ class FriendController:
             )
             if result["status"] == "success":
                 # Send response
-                root_key = encrypt_with_RSAKey(root_key, public_key)
+                root_key = encrypt_with_RSAKey(root_key, public_key).decode('utf-8')
                 public_key = userStore.public_key.public_bytes(
                     encoding=serialization.Encoding.PEM,
                     format=serialization.PublicFormat.SubjectPublicKeyInfo
@@ -606,7 +606,7 @@ class FriendController:
             # Accept friend request
             public_key = serialization.load_pem_public_key(data["public_key"].encode('utf-8'))
             profile_image = base64_to_image(data["profile_base64"])
-            root_key = decrypt_with_RSAKey(data["root_key", userStore.private_key])
+            root_key = decrypt_with_RSAKey(data["root_key"].encode('utf-8'), userStore.private_key)
             
             result = self.add_friend(
                 user_id=userStore.user_id,
