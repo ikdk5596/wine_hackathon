@@ -387,8 +387,9 @@ class FriendController:
                 "message": "Friend not found"
             }
         
-        dr_message = friend.doubleRatceht.encrypt(text)
-        response = friend_api.create_text_message(user_id, friend_id, user_id, text, is_read=True)
+        dr_message = friend.doubleRatchet.encrypt(text)
+        double_ratchet_info = friend.doubleRatchet.to_json()
+        response = friend_api.create_text_message(user_id, friend_id, user_id, text, double_ratchet_info, is_read=True)
 
         if response.get("status") == "success":
             data = response.get("data")
