@@ -1,4 +1,4 @@
-# 🍷 Wine Hackathon
+# 🍷 Wine Hackathon - EncTalk
 
 ## Overview
 
