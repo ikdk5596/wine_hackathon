@@ -45,11 +45,11 @@ Python 3.11 or higher and pip 23.0 or higher are required. Additional libraries 
 
 ### GUI Program
 This is a GUI program that provides a chat-style user interface. Users can select a recipient from their friends list and upload image files to send encrypted messages.
-1. **Navigate to the GUI directory from the project root**  
+1. **Navigate to the GUI directory from the project root.**  
    ```bash
    cd app
    ```
-2. **(Optional) Create and activate a virtual environment**
+2. **(Optional) Create and activate a virtual environment.**
    * **venv Method**
    ```bash
     # Windows
