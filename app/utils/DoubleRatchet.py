@@ -50,18 +50,25 @@ class DoubleRatchet:
         ciphertext = aesgcm.encrypt(nonce, plaintext, None)
         self.send_count += 1
 
-        return {
-            "ciphertext": ciphertext,
-            "nonce": nonce,
+        def encode(b): return b64encode(b).decode()
+
+        return json.dumps({
+            "ciphertext": encode(ciphertext),
+            "nonce": encode(nonce),
             "header": {
-                "dh_pub": self.dh_pub,
+                "dh_pub": encode(self.dh_pub),
                 "msg_num": self.send_count
             }
-        }
+        })
+
 
     def decrypt(self, message: dict) -> bytes:
+        def decode(s): return b64decode(s.encode())
+
+        message = json.loads(json_str)
+
         if message["header"]["msg_num"] > 0 and message["header"]["msg_num"] % 20 == 0:
-            self.dh_pub_remote = message["header"]["dh_pub"]
+            self.dh_pub_remote = decode(message["header"]["dh_pub"])
             shared_secret = self._dh(self.dh_priv, self.dh_pub_remote)
             self.root_key = hashlib.sha256(self.root_key + shared_secret).digest()
             self.recv_chain_key = self.root_key
@@ -69,9 +76,14 @@ class DoubleRatchet:
 
         self.recv_chain_key, msg_key = self._kdf_chain(self.recv_chain_key)
         aesgcm = AESGCM(msg_key)
-        plaintext = aesgcm.decrypt(message["nonce"], message["ciphertext"], None)
+        plaintext = aesgcm.decrypt(
+            decode(message["nonce"]),
+            decode(message["ciphertext"]),
+            None
+        )
         self.recv_count += 1
         return plaintext
+
 
     def to_json(self) -> str:
         def encode(b):

@@ -248,7 +248,7 @@ class FriendController:
                 "message": "Friend not found"
             }
         
-        text = friend.doubleRatchet.decrypt(dr_message)
+        text = friend.doubleRatchet.decrypt(dr_message).decode()
         double_ratchet_info = friend.doubleRatchet.to_json()
         is_read = friendStore.selected_friend and friendStore.selected_friend.friend_id == friend_id
         response = friend_api.create_text_message(userStore.user_id, friend_id, friend_id, text, double_ratchet_info,
