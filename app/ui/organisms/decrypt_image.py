@@ -84,7 +84,7 @@ class DecryptImage(ctk.CTkFrame):
                 title="Save Array As"
             )
             if file_path:
-                latent_array = encode_image_to_latent(self.latent_image_label.image)
+                latent_array = encode_image_to_latent(self.latent_image_label.original_image)
                 enc_latent_array = encrypt_latent(latent_array, MAC_ADDRESS)
                 np.save(file_path, enc_latent_array)
         except Exception as e:
