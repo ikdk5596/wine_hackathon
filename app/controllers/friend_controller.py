@@ -139,8 +139,6 @@ class FriendController:
 
         response = friend_api.get_friends(UserStore().user_id)
 
-        print(response)
-
         if response.get("status") == "success":
             data = response.get("data")
             
@@ -562,10 +560,6 @@ class FriendController:
         data = json_dict.get("data")
 
         userStore = UserStore()
-
-        print(f"[FriendController] Received socket response: {json_dict}"
-              f"{' with binary data' if binary_bytes else ''}"
-                f"{' of type ' + binary_type if binary_type else ''}")
 
         if type == "request_friend":
             # Accept friend request

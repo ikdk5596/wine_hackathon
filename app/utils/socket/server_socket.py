@@ -82,29 +82,27 @@ class ServerSocket:
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             s.bind((self.ip, self.port))
             s.listen()
-            print(f"[Server] Listening on {self.ip}:{self.port}")
 
             while True:
                 conn, addr = s.accept()
                 with conn:
-                    print(f"[Server] Connection from {addr}")
+                    # print(f"[Server] Connection from {addr}")
 
-                    # 1. JSON 길이 수신
+                    # Json length
                     header = self._recv_exact(conn, 4)
                     json_len = struct.unpack("!I", header)[0]
 
-                    # 2. JSON 본문 수신
+                    # Json data
                     json_data = self._recv_exact(conn, json_len)
                     json_dict = json.loads(json_data.decode("utf-8"))
-                    print("[Server] json_data :", json_dict)
 
-                    # 3. Binary 데이터 수신 (옵션)
+                    # Binary data
                     binary_data = None
                     binary_type = None
                     if json_dict.get("has_binary"):
                         binary_data = self._recv_exact(conn, json_dict["binary_length"])
                         binary_type = json_dict["binary_type"]
-                        print(f"[Server] Received binary ({binary_type}, {len(binary_data)} bytes)")
+                        # print(f"[Server] Received binary ({binary_type}, {len(binary_data)} bytes)")
 
                     for callback in self.callbacks:
                         callback(json_dict, binary_data, binary_type)

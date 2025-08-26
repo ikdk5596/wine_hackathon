@@ -162,10 +162,8 @@ def get_friends(user_id: str) -> dict:
             if 'enc_latent_path' in message:
                 enc_latent_path = message['enc_latent_path']
                 if os.path.exists(enc_latent_path):
-                    print(1)
                     message['enc_latent_array'] = np.load(enc_latent_path)
                 else:
-                    print(2)
                     message['enc_latent_array'] = None
     
     return {

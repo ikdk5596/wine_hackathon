@@ -27,12 +27,10 @@ class ClientSocket:
         json_bytes = json.dumps(json_dict).encode("utf-8")
         json_len = struct.pack("!I", len(json_bytes))
 
-        # 송신
-        print("[Client] Sending data to server...", json_dict, 
-              f"{'with binary data' if binary_bytes else 'without binary data'}")
+        # print("[Client] Sending data to server...", json_dict, 
+        #       f"{'with binary data' if binary_bytes else 'without binary data'}")
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             s.connect((self.ip, self.port))
             s.sendall(json_len + json_bytes)
             if binary_bytes:
                 s.sendall(binary_bytes)
-            print("[Client] Sent.")

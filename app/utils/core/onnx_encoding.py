@@ -1,4 +1,5 @@
 import os
+import time
 import numpy as np
 from PIL import Image
 import onnxruntime as ort
@@ -23,21 +24,26 @@ def encode_image_to_latent(image: Image.Image) -> np.ndarray:
     # encoding
     input_name = encoder_session.get_inputs()[0].name
     output_name = encoder_session.get_outputs()[0].name
+
+    t1 = time.time()
     latent = encoder_session.run([output_name], {input_name: img_np})[0]
+    t2 = time.time()
+    print(f"Encoding time: {t2 - t1:.4f} seconds")
     return latent  # shape: (1,C,H,W)
 
 def decode_latent_to_image(latent: np.ndarray) -> Image.Image:
     """Convert latent tensor to PIL image using decoder ONNX model."""
 
-    # print(latent.shape)
     # decoding
     input_name = decoder_session.get_inputs()[0].name
     output_name = decoder_session.get_outputs()[0].name
+    t1 = time.time()
     prediction = decoder_session.run([output_name], {input_name: latent})[0]
-
+    t2 = time.time()
+    print(f"Decoding time: {t2 - t1:.4f} seconds")
+    
     # postprocess
     x = np.clip((prediction[0] + 1.0) * 0.5, 0.0, 1.0)  # (3,H,W)
-    print('x', x.shape)
     x = (x.transpose(1, 2, 0) * 255.0).round().astype(np.uint8)  # (H,W,3)
     return Image.fromarray(x)
 
