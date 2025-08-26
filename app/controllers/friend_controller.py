@@ -1,16 +1,11 @@
 import io
 import base64
-import json
-import struct
-import torch
 import numpy as np
 from PIL import Image
 from api import friend_api
 from utils.network import get_my_ip, get_my_port
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric.rsa import RSAPublicKey
-from utils.core.encoding import encode_image_to_latent
-from utils.core.encryption import encrypt_latent, encrypt_with_RSAKey
 from utils.socket.server_socket import ServerSocket
 from utils.socket.client_socket import ClientSocket
 from utils.image import base64_to_image, image_to_base64
@@ -128,6 +123,8 @@ class FriendController:
 
         response = friend_api.get_friends(UserStore().user_id)
 
+        print(response)
+
         if response.get("status") == "success":
             data = response.get("data")
             
@@ -150,7 +147,7 @@ class FriendController:
                     messages_list.append({
                         "sender_id": message['sender_id'],
                         "enc_latent_size": message['enc_latent_size'],
-                        "enc_latent_tensor": message['enc_latent_tensor'],
+                        "enc_latent_array": message['enc_latent_array'],
                         "enc_seed_bytes": enc_seed_bytes,
                         "seed_string": message['seed_string'],
                         "timestamp": message['timestamp'],
@@ -260,7 +257,7 @@ class FriendController:
                 "message": response.get("message", "Failed to send message")
             }
 
-    def receive_latent_message(self, friend_id: str,  enc_latent_size: int, enc_latent_tensor: torch.Tensor, enc_seed_string: str, seed_string: str, timestamp: float) -> None:
+    def receive_latent_message(self, friend_id: str,  enc_latent_size: int, enc_latent_array: np.ndarray, enc_seed_string: str, seed_string: str, timestamp: float) -> None:
         userStore = UserStore()
         if not userStore.is_authenticated:
             return {
@@ -278,7 +275,7 @@ class FriendController:
         
         is_read = friendStore.selected_friend and friendStore.selected_friend.friend_id == friend_id
         response = friend_api.create_latent_message(userStore.user_id, friend_id, friend_id, enc_latent_size,
-                                                enc_latent_tensor, enc_seed_string, seed_string,
+                                                enc_latent_array, enc_seed_string, seed_string,
                                                 timestamp=timestamp, is_read=is_read)
 
         if response.get("status") == "success":
@@ -288,7 +285,7 @@ class FriendController:
             enc_seed_bytes = base64.b64decode(enc_seed_string.encode('utf-8'))
             message = {
                 "sender_id": data['sender_id'],
-                "enc_latent_tensor": enc_latent_tensor,
+                "enc_latent_array": enc_latent_array,
                 "enc_latent_size": data['enc_latent_size'],
                 "enc_seed_bytes": enc_seed_bytes,
                 "seed_string": data['seed_string'],
@@ -407,13 +404,13 @@ class FriendController:
                 "message": response.get("message", "Failed to send message")
             }
 
-    def send_latent_message(self, user_id: str, friend_id: str, enc_latent_tensor: torch.Tensor, enc_seed_bytes: str, seed_string: str) -> dict:
+    def send_latent_message(self, user_id: str, friend_id: str, enc_latent_array: np.ndarray, enc_seed_bytes: str, seed_string: str) -> dict:
         if not isinstance(user_id, str):
             raise ValueError("User ID must be a string")
         if not isinstance(friend_id, str):
             raise ValueError("Friend ID must be a string")
-        if not isinstance(enc_latent_tensor, torch.Tensor):
-            raise ValueError("Encoded latent tensor must be a torch.Tensor")
+        if not isinstance(enc_latent_array, np.ndarray):
+            raise ValueError("Encoded latent tensor must be a np.ndarray")
         if not isinstance(enc_seed_bytes, bytes):
             raise ValueError("Encrypted seed string must be a string")
         if not isinstance(seed_string, str):
@@ -436,13 +433,13 @@ class FriendController:
         
         # Serialize
         buffer = io.BytesIO()
-        torch.save(enc_latent_tensor, buffer)
+        np.save(buffer, enc_latent_array)
         enc_latent_bytes = buffer.getvalue()
         enc_latent_size = len(enc_latent_bytes)
 
         enc_seed_string = base64.b64encode(enc_seed_bytes).decode('utf-8')
 
-        response = friend_api.create_latent_message(user_id, friend_id, user_id, enc_latent_size, enc_latent_tensor, enc_seed_string, seed_string, is_read=True)
+        response = friend_api.create_latent_message(user_id, friend_id, user_id, enc_latent_size, enc_latent_array, enc_seed_string, seed_string, is_read=True)
 
         if response.get("status") == "success":
             data = response.get("data")
@@ -451,7 +448,7 @@ class FriendController:
 
             message = {
                 "sender_id": data['sender_id'],
-                "enc_latent_tensor": enc_latent_tensor,
+                "enc_latent_array": enc_latent_array,
                 "enc_latent_size": enc_latent_size,
                 "enc_seed_bytes": enc_seed_bytes,
                 "seed_string": data['seed_string'],
@@ -600,8 +597,8 @@ class FriendController:
         elif type == "latent_message":
             sender_id = data["sender_id"]
             enc_latent_size = data["enc_latent_size"]
-            enc_latent_tensor = torch.load(io.BytesIO(binary_bytes)) if binary_bytes else None
+            enc_latent_array = np.load(io.BytesIO(binary_bytes)) if binary_bytes else None
             enc_seed_string = data["enc_seed_string"]
             seed_string = data.get("seed_string", None)
             timestamp = data["timestamp"]
-            self.receive_latent_message(sender_id, enc_latent_size, enc_latent_tensor, enc_seed_string, seed_string, timestamp)
+            self.receive_latent_message(sender_id, enc_latent_size, enc_latent_array, enc_seed_string, seed_string, timestamp)

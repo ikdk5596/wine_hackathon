@@ -1,13 +1,14 @@
 import io
 import customtkinter as ctk
 import tkinter.filedialog as fd
-import torch
+import numpy as np
 from ui.atoms.toast import Toast
 from ui.atoms.button import Button
 from ui.atoms.input import Input
 from ui.atoms.image_frame import ImageFrame
-from utils.core.encoding import encode_image_to_latent, decode_latent_to_image
-from utils.core.encryption import encrypt_latent, decrypt_latent, decrypt_with_RSAKey
+from utils.core.onnx_encoding import encode_image_to_latent, decode_latent_to_image
+from utils.core.onnx_encryption import encrypt_latent, decrypt_latent
+from utils.core.encryption import decrypt_with_RSAKey
 from utils.mac import get_mac_address
 from utils.image import latent_to_gray_image
 from states.user_store import UserStore
@@ -23,7 +24,7 @@ class DecryptImage(ctk.CTkFrame):
         self.grid_columnconfigure(0, weight=1)
         self.message = message
 
-        latent_image = latent_to_gray_image(message["enc_latent_tensor"])
+        latent_image = latent_to_gray_image(message["enc_latent_array"])
         self.latent_image_label = ImageFrame( master=self, image=latent_image, width=256, height=256, border_radius=5)
         self.latent_image_label.pack(padx=40, pady=(20, 10))
 
@@ -61,8 +62,9 @@ class DecryptImage(ctk.CTkFrame):
                 seed_string = seed_bytes.decode('utf-8')  # Ensure seed is a string
 
             # decrypt latent tensor
-            latent_tensor = decrypt_latent(self.message['enc_latent_tensor'], seed_string)
-            decoded_image = decode_latent_to_image(latent_tensor)
+            latent_array = decrypt_latent(self.message['enc_latent_array'], seed_string)
+            decoded_image = decode_latent_to_image(latent_array)
+            
             self.latent_image_label.update_image(decoded_image)
             self.latent_image_label.pack(pady=(20, 10))
 
@@ -77,13 +79,14 @@ class DecryptImage(ctk.CTkFrame):
 
     def save_image(self):
         try:
-            file_path = fd.asksaveasfilename(    defaultextension=".pt",
-                filetypes=[("PyTorch Tensor", "*.pt"), ("All Files", "*.*")],
-                title="Save Tensor As"
+            file_path = fd.asksaveasfilename(
+                defaultextension=".npy",
+                filetypes=[("NumPy Array", "*.npy"), ("All Files", "*.*")],
+                title="Save Array As"
             )
             if file_path:
-                latent_tensor = encode_image_to_latent(self.latent_image_label.image)
-                enc_latent_tensor = encrypt_latent(latent_tensor, MAC_ADDRESS)
-                torch.save(enc_latent_tensor, file_path)
+                latent_array = encode_image_to_latent(self.latent_image_label.image)
+                enc_latent_array = encrypt_latent(latent_array, MAC_ADDRESS)
+                np.save(file_path, enc_latent_array)
         except Exception as e:
             Toast(self, f"Error saving image: {str(e)}", type="error", duration=2000)

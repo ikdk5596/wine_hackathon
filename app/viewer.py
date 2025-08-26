@@ -1,6 +1,4 @@
 import customtkinter as ctk
-from utils.core.encryption import decrypt_latent
-from utils.core.encoding import decode_latent_to_image
 
 APP_TITLE = "EncTalk"
 WINDOW_SIZE = "352x352"

@@ -1,11 +1,11 @@
 import customtkinter as ctk
-import torch
+import numpy as np
 import tkinter.filedialog as fd
 from ui.atoms.button import Button
 from ui.atoms.image_frame import ImageFrame
 from utils.mac import get_mac_address
-from utils.core.encryption import decrypt_latent
-from utils.core.encoding import decode_latent_to_image
+from utils.core.onnx_encryption import decrypt_latent
+from utils.core.onnx_encoding import decode_latent_to_image
 
 MAC_ADDRESS = get_mac_address()
 
@@ -35,7 +35,7 @@ class ViewerPage(ctk.CTkFrame):
     # when a file is selected
     def pick_file(self):
         path = fd.askopenfilename(
-                            filetypes=[("PyTorch Tensor", "*.pt"), ("All Files", "*.*")],
+            filetypes=[("NumPy Array", "*.npy"), ("All Files", "*.*")],
         )
         
         if path:
@@ -43,7 +43,7 @@ class ViewerPage(ctk.CTkFrame):
             self.file_button.configure(text="File Selected")
             
             # Load and display the image
-            enc_latent_tensor = torch.load(path)
-            latent_tensor = decrypt_latent(enc_latent_tensor, MAC_ADDRESS)
-            latent_image = decode_latent_to_image(latent_tensor)
+            enc_latent_array = np.load(path)
+            latent_array = decrypt_latent(enc_latent_array, MAC_ADDRESS)
+            latent_image = decode_latent_to_image(latent_array)
             self.image_frame.update_image(latent_image)
