@@ -121,4 +121,4 @@ This is a CLI (Command Line Interface) program that provides functionality for e
    ```
 
 ## License
-This project is distributed under the MIT License. For more details, please refer to the LICENSE file.
+This project is distributed under the MIT License. For more details, please refer to the [LICENSE](LICENSE) file.
