@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 import os
 import sys
 import pathlib
@@ -111,7 +109,7 @@ def main():
         output_names=["latent"],
         dynamic_axes=enc_dynamic_axes,
     )
-    print(f"[OK] Saved: {enc_path}")
+    print(f"Saved: {enc_path}")
 
     # Export decoder to ONNX using dummy latent
     dummy_latent = torch.randn(*latent.shape, device=device)
